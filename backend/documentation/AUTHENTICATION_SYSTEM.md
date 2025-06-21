@@ -1,6 +1,6 @@
 # CoFund Authentication System
 
-This document explains the file structure and responsibilities of the user authentication system for the CoFund personal finance app.
+This document explains the file structure and responsibilities of the user authentication system for the CoFund personal finance app using Supabase Auth.
 
 ## File Structure Overview
 
@@ -22,27 +22,25 @@ backend/src/
 ## File Descriptions
 
 ### 1. `controllers/userController.js`
-**Purpose**: Contains all business logic for user authentication operations.
+**Purpose**: Contains all business logic for user authentication operations using Supabase Auth.
 
 **Responsibilities**:
-- User registration with email/password
-- User login and JWT token generation
-- Password hashing and verification
+- User registration via Supabase Auth
+- User login via Supabase Auth
 - User profile management (get, update)
-- Password change and reset functionality
+- Email verification handling
 - Account deletion
-- JWT token refresh
+- Session management
 
 **Key Functions**:
-- `registerUser()` - Creates new user accounts
-- `loginUser()` - Authenticates users and returns tokens
+- `registerUser()` - Creates new user accounts via Supabase Auth
+- `loginUser()` - Authenticates users via Supabase Auth
 - `getUserProfile()` - Retrieves user profile information
 - `updateUserProfile()` - Updates user profile data
-- `changePassword()` - Allows users to change their password
-- `resetPassword()` - Handles password reset requests
+- `verifyEmail()` - Handles email verification
 - `deleteUser()` - Deletes user accounts
-- `generateJWT()` - Creates JWT tokens
-- `verifyJWT()` - Validates JWT tokens
+- `refreshSession()` - Refreshes Supabase sessions
+- `logoutUser()` - Handles user logout
 
 ### 2. `routes/auth.js`
 **Purpose**: Defines all authentication-related API endpoints.
@@ -53,30 +51,30 @@ backend/src/
 - Handles route-specific logic
 
 **API Endpoints**:
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/forgot-password` - Password reset request
+- `POST /api/auth/register` - User registration via Supabase Auth
+- `POST /api/auth/login` - User login via Supabase Auth
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/verify-email` - Email verification
 - `GET /api/auth/profile` - Get user profile (protected)
 - `PUT /api/auth/profile` - Update user profile (protected)
-- `PUT /api/auth/change-password` - Change password (protected)
 - `DELETE /api/auth/account` - Delete account (protected)
-- `POST /api/auth/refresh-token` - Refresh JWT token
+- `POST /api/auth/refresh-session` - Refresh Supabase session
 
 ### 3. `middleware/auth.js`
-**Purpose**: Handles JWT token verification and user authentication.
+**Purpose**: Handles Supabase session verification and user authentication.
 
 **Responsibilities**:
-- Extracts and validates JWT tokens from requests
+- Extracts and validates Supabase access tokens from requests
 - Adds user information to request objects
 - Implements role-based access control
-- Handles token refresh validation
+- Handles session refresh validation
 
 **Key Middleware Functions**:
-- `authenticateToken()` - Verifies JWT tokens and authenticates users
+- `authenticateSupabase()` - Verifies Supabase tokens and authenticates users
 - `requireRole()` - Checks if user has required permissions
 - `requireOwnership()` - Verifies resource ownership
 - `optionalAuth()` - Optional authentication (doesn't fail if no token)
-- `validateRefreshToken()` - Validates refresh tokens
+- `validateSession()` - Validates Supabase sessions
 
 ### 4. `middleware/validation.js`
 **Purpose**: Handles input validation for authentication requests.
@@ -91,7 +89,6 @@ backend/src/
 - `validate()` - Generic validation middleware
 - `handleValidationErrors()` - Processes validation errors
 - `validateEmail()` - Email format validation
-- `validatePassword()` - Password strength validation
 - `sanitizeInput()` - Input sanitization
 
 ### 5. `middleware/validationSchemas.js`
@@ -106,30 +103,25 @@ backend/src/
 - `registerSchema` - User registration validation
 - `loginSchema` - User login validation
 - `updateProfileSchema` - Profile update validation
-- `changePasswordSchema` - Password change validation
-- `forgotPasswordSchema` - Password reset request validation
-- `resetPasswordSchema` - Password reset with token validation
-- `refreshTokenSchema` - Token refresh validation
+- `verifyEmailSchema` - Email verification validation
 - `deleteAccountSchema` - Account deletion validation
 
 ### 6. `utils/auth.js`
-**Purpose**: Contains utility functions for authentication operations.
+**Purpose**: Contains utility functions for Supabase authentication operations.
 
 **Responsibilities**:
-- Password hashing and verification using bcrypt
-- JWT token generation and verification
+- Supabase client initialization and configuration
+- Session validation and refresh
+- User data synchronization
 - Email validation
-- Password strength checking
 - Token management utilities
 
 **Key Utility Functions**:
-- `hashPassword()` - Hashes passwords with bcrypt
-- `verifyPassword()` - Verifies passwords against hashes
-- `generateAccessToken()` - Creates JWT access tokens
-- `generateRefreshToken()` - Creates JWT refresh tokens
-- `verifyToken()` - Verifies JWT tokens
-- `generateResetToken()` - Creates password reset tokens
-- `checkPasswordStrength()` - Analyzes password strength
+- `initSupabaseClient()` - Initializes Supabase client
+- `getSupabaseUser()` - Gets user from Supabase session
+- `validateSupabaseSession()` - Validates Supabase sessions
+- `refreshSupabaseSession()` - Refreshes Supabase sessions
+- `syncUserProfile()` - Syncs user data between auth and profile tables
 - `isValidEmail()` - Validates email format
 - `generateRandomString()` - Creates secure random strings
 
@@ -150,39 +142,41 @@ backend/src/
 
 ## Authentication Flow
 
-1. **Registration**: User submits email/password → validation → password hashing → user creation → JWT tokens
-2. **Login**: User submits credentials → validation → password verification → JWT tokens
-3. **Protected Routes**: Request includes JWT → token verification → user authentication → route access
-4. **Token Refresh**: Refresh token → validation → new access token
-5. **Password Reset**: Email request → reset token → password update
+1. **Registration**: User submits email/password → Supabase Auth registration → email verification → user profile creation
+2. **Login**: User submits credentials → Supabase Auth login → session creation → user data retrieval
+3. **Protected Routes**: Request includes Supabase token → token verification → user authentication → route access
+4. **Session Refresh**: Refresh token → Supabase session refresh → new access token
+5. **Email Verification**: Email link → Supabase verification → account activation
 
 ## Security Features
 
-- **Password Hashing**: bcrypt with salt rounds
-- **JWT Tokens**: Secure token-based authentication
+- **Supabase Auth**: Built-in secure authentication with password hashing
+- **Session Management**: Secure token-based authentication via Supabase
+- **Email Verification**: Built-in email verification system
 - **Input Validation**: Comprehensive request validation
 - **XSS Protection**: Input sanitization
-- **Rate Limiting**: (To be implemented)
+- **Row Level Security**: Supabase RLS policies
+- **Rate Limiting**: Built-in Supabase rate limiting
 - **CORS**: Cross-origin resource sharing configuration
 - **Environment Variables**: Secure configuration management
 
 ## Next Steps
 
-1. Install required dependencies (bcrypt, jsonwebtoken, joi)
-2. Implement the TODO sections in each file
-3. Set up environment variables for JWT secrets
-4. Test authentication endpoints
-5. Add rate limiting and additional security measures
-6. Integrate with frontend application
+1. Set up Supabase project and configure authentication
+2. Configure environment variables for Supabase connection
+3. Implement the TODO sections in each file
+4. Set up user profile table to sync with Supabase auth.users
+5. Test authentication endpoints
+6. Configure Row Level Security (RLS) policies
+7. Integrate with frontend application
 
 ## Dependencies Needed
 
 ```json
 {
-  "bcrypt": "^5.1.0",
-  "jsonwebtoken": "^9.0.0",
+  "@supabase/supabase-js": "^2.50.0",
   "joi": "^17.9.0"
 }
 ```
 
-This authentication system provides a solid foundation for secure user management in the CoFund application. 
+This authentication system provides a solid foundation for secure user management in the CoFund application using Supabase Auth. 

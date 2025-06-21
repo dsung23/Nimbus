@@ -1,26 +1,63 @@
-// Authentication Middleware - Handles JWT token verification and user authentication
-// This file will contain middleware functions for:
-// - JWT token verification
+// Authentication Middleware - Handles Supabase token verification and user authentication
+// This file contains middleware functions for:
+// - Supabase JWT token verification
 // - User authentication
 // - Role-based access control
 // - Token refresh validation
 
-// TODO: Import required dependencies
-// const jwt = require('jsonwebtoken');
-// const { db } = require('../utils/database');
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 /**
- * Middleware to authenticate JWT tokens
+ * Middleware to authenticate Supabase JWT tokens
  * Extracts token from Authorization header and verifies it
  * Adds user information to request object if valid
  */
 const authenticateToken = async (req, res, next) => {
-  // TODO: Implement JWT token authentication
-  // 1. Extract token from Authorization header
-  // 2. Verify token using JWT_SECRET
-  // 3. Check if user exists in database
-  // 4. Add user info to req.user
-  // 5. Handle token expiration and refresh
+  try {
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access token required'
+      });
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+    // Verify token with Supabase
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
+    }
+
+    // Add user info to request object
+    req.user = {
+      id: user.id,
+      email: user.email,
+      email_verified: user.email_confirmed_at ? true : false
+    };
+
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Authentication failed',
+      error: error.message
+    });
+  }
 };
 
 /**

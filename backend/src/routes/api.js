@@ -11,7 +11,7 @@ const express = require('express');
 const router = express.Router();
 
 // TODO: Import route modules
-// const authRoutes = require('./auth');
+const authRoutes = require('./auth');
 // const userRoutes = require('./user');
 // const accountRoutes = require('./account');
 // const transactionRoutes = require('./transaction');
@@ -36,8 +36,7 @@ router.get('/version', (req, res) => {
 });
 
 // Mount route modules
-// TODO: Uncomment and implement route mounting
-// router.use('/auth', authRoutes);
+router.use('/auth', authRoutes);
 // router.use('/users', userRoutes);
 // router.use('/accounts', accountRoutes);
 // router.use('/transactions', transactionRoutes);
@@ -45,19 +44,15 @@ router.get('/version', (req, res) => {
 // router.use('/analytics', analyticsRoutes);
 
 // 404 handler for undefined routes
-router.use('*', (req, res) => {
+router.use((req, res) => {
   res.status(404).json({
     error: 'Route not found',
     message: `The requested route ${req.originalUrl} does not exist`,
     availableRoutes: [
       '/api/health',
       '/api/version',
-      '/api/auth/*',
-      '/api/users/*',
-      '/api/accounts/*',
-      '/api/transactions/*',
-      '/api/chat/*',
-      '/api/analytics/*'
+      '/api/auth/register',
+      '/api/auth/login'
     ]
   });
 });
