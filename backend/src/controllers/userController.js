@@ -47,10 +47,10 @@ module.exports = {
       } = req.body;
 
       // Basic validation
-      if (!email || !password || !first_name) {
+      if (!email || !password || !first_name || !last_name || !phone || !date_of_birth) {
         return res.status(400).json({
           success: false,
-          message: 'Email, password, and first name are required'
+          message: 'All fields are required: email, password, first_name, last_name, phone, date_of_birth'
         });
       }
 
@@ -68,6 +68,31 @@ module.exports = {
         return res.status(400).json({
           success: false,
           message: 'Password must be at least 8 characters long'
+        });
+      }
+
+      // Validate phone number format
+      if (!/^\+?[\d\s\-\(\)]+$/.test(phone)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid phone number'
+        });
+      }
+
+      // Validate date of birth format and that it's not in the future
+      const dobDate = new Date(date_of_birth);
+      if (isNaN(dobDate.getTime()) || dobDate > new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid date of birth (YYYY-MM-DD format, not in future)'
+        });
+      }
+
+      // Validate last name is not empty
+      if (last_name.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Last name cannot be empty'
         });
       }
 
@@ -101,9 +126,9 @@ module.exports = {
         id: authData.user.id,
         email: authData.user.email,
         first_name,
-        last_name: last_name || null,
-        phone: phone || null,
-        date_of_birth: date_of_birth || null,
+        last_name,
+        phone,
+        date_of_birth,
         email_verified: authData.user.email_confirmed_at ? true : false,
         is_active: true,
         preferences: {},
