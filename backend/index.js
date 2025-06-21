@@ -14,7 +14,7 @@ app.use('/api', apiRoutes);
 // Simple test route (keeping for backward compatibility)
 app.get('/test', (req, res) => {
   res.json({ 
-    message: 'Hello from backend! 🚀', 
+    message: 'Hello from backend!', 
     timestamp: new Date().toISOString(),
     status: 'success'
   });
@@ -22,5 +22,5 @@ app.get('/test', (req, res) => {
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

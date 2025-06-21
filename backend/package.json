@@ -5,13 +5,21 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "node src/utils/migrations.js run",
+    "migrate:create": "node src/utils/migrations.js create",
+    "migrate:status": "node src/utils/migrations.js status",
+    "db:init": "node -e \"require('./src/utils/database').initializeDatabase().then(() => process.exit(0)).catch(() => process.exit(1))\"",
+    "db:test": "node -e \"require('./src/utils/database').testConnection().then(() => process.exit(0)).catch(() => process.exit(1))\"",
+    "db:setup": "node src/utils/setup-database.js generate",
+    "db:generate-sql": "node -e \"console.log(require('./src/utils/database').generateAllSchemaSQL())\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@supabase/supabase-js": "^2.50.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0"
