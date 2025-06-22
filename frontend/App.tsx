@@ -1,11 +1,6 @@
-import { StatusBar } from 'expo-status-bar';
-import TestScreen from './src/screens/TestScreen';
+import React from 'react';
+import { DashboardScreen } from './src/screens/DashboardScreen';
 
 export default function App() {
-  return (
-    <>
-      <TestScreen />
-      <StatusBar style="auto" />
-    </>
-  );
+  return <DashboardScreen />;
 }

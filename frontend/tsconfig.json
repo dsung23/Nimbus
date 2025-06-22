@@ -3,6 +3,12 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-jsx",
-    "esModuleInterop": true
-  }
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["nativewind/types"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
 }
