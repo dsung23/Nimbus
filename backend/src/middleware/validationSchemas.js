@@ -6,92 +6,236 @@
 // - Password changes
 // - Password reset
 
-// TODO: Import validation library
-// const Joi = require('joi');
+const Joi = require('joi');
 
 /**
  * Schema for user registration
  * Validates email, password, first name, and last name
  */
-const registerSchema = {
-  // TODO: Define registration validation schema
-  // - email: required, valid email format
-  // - password: required, minimum 8 characters, strong password
-  // - firstName: required, string, 1-50 characters
-  // - lastName: required, string, 1-50 characters
-};
+const registerSchema = Joi.object({
+  email: Joi.string()
+    .email({ tlds: { allow: false } })
+    .required()
+    .messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required'
+    }),
+  password: Joi.string()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .required()
+    .messages({
+      'string.min': 'Password must be at least 8 characters long',
+      'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+      'any.required': 'Password is required'
+    }),
+  first_name: Joi.string()
+    .min(1)
+    .max(50)
+    .pattern(/^[a-zA-Z\s'-]+$/)
+    .required()
+    .messages({
+      'string.min': 'First name cannot be empty',
+      'string.max': 'First name must be 50 characters or less',
+      'string.pattern.base': 'First name can only contain letters, spaces, hyphens, and apostrophes',
+      'any.required': 'First name is required'
+    }),
+  last_name: Joi.string()
+    .min(1)
+    .max(50)
+    .pattern(/^[a-zA-Z\s'-]+$/)
+    .required()
+    .messages({
+      'string.min': 'Last name cannot be empty',
+      'string.max': 'Last name must be 50 characters or less',
+      'string.pattern.base': 'Last name can only contain letters, spaces, hyphens, and apostrophes',
+      'any.required': 'Last name is required'
+    }),
+  phone: Joi.string()
+    .pattern(/^\+?[\d\s\-\(\)]{10,15}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Please provide a valid phone number',
+      'any.required': 'Phone number is required'
+    }),
+  date_of_birth: Joi.date()
+    .max('now')
+    .required()
+    .messages({
+      'date.max': 'Date of birth cannot be in the future',
+      'any.required': 'Date of birth is required'
+    })
+});
 
 /**
  * Schema for user login
  * Validates email and password
  */
-const loginSchema = {
-  // TODO: Define login validation schema
-  // - email: required, valid email format
-  // - password: required, non-empty string
-};
+const loginSchema = Joi.object({
+  email: Joi.string()
+    .email({ tlds: { allow: false } })
+    .required()
+    .messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required'
+    }),
+  password: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'string.min': 'Password cannot be empty',
+      'any.required': 'Password is required'
+    })
+});
 
 /**
  * Schema for profile updates
  * Validates optional profile fields
  */
-const updateProfileSchema = {
-  // TODO: Define profile update validation schema
-  // - firstName: optional, string, 1-50 characters
-  // - lastName: optional, string, 1-50 characters
-  // - phone: optional, valid phone format
-  // - dateOfBirth: optional, valid date
-};
+const updateProfileSchema = Joi.object({
+  first_name: Joi.string()
+    .min(1)
+    .max(50)
+    .pattern(/^[a-zA-Z\s'-]+$/)
+    .optional()
+    .messages({
+      'string.min': 'First name cannot be empty',
+      'string.max': 'First name must be 50 characters or less',
+      'string.pattern.base': 'First name can only contain letters, spaces, hyphens, and apostrophes'
+    }),
+  last_name: Joi.string()
+    .min(1)
+    .max(50)
+    .pattern(/^[a-zA-Z\s'-]+$/)
+    .optional()
+    .messages({
+      'string.min': 'Last name cannot be empty',
+      'string.max': 'Last name must be 50 characters or less',
+      'string.pattern.base': 'Last name can only contain letters, spaces, hyphens, and apostrophes'
+    }),
+  phone: Joi.string()
+    .pattern(/^\+?[\d\s\-\(\)]{10,15}$/)
+    .optional()
+    .messages({
+      'string.pattern.base': 'Please provide a valid phone number'
+    }),
+  date_of_birth: Joi.date()
+    .max('now')
+    .optional()
+    .messages({
+      'date.max': 'Date of birth cannot be in the future'
+    }),
+  preferences: Joi.object().optional()
+});
 
 /**
  * Schema for password changes
  * Validates current password and new password
  */
-const changePasswordSchema = {
-  // TODO: Define password change validation schema
-  // - currentPassword: required, non-empty string
-  // - newPassword: required, minimum 8 characters, strong password
-  // - confirmPassword: required, must match newPassword
-};
+const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'string.min': 'Current password cannot be empty',
+      'any.required': 'Current password is required'
+    }),
+  newPassword: Joi.string()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .required()
+    .messages({
+      'string.min': 'New password must be at least 8 characters long',
+      'string.pattern.base': 'New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+      'any.required': 'New password is required'
+    }),
+  confirmPassword: Joi.string()
+    .valid(Joi.ref('newPassword'))
+    .required()
+    .messages({
+      'any.only': 'Passwords do not match',
+      'any.required': 'Password confirmation is required'
+    })
+});
 
 /**
  * Schema for password reset requests
  * Validates email address
  */
-const forgotPasswordSchema = {
-  // TODO: Define password reset validation schema
-  // - email: required, valid email format
-};
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string()
+    .email({ tlds: { allow: false } })
+    .required()
+    .messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required'
+    })
+});
 
 /**
  * Schema for password reset with token
  * Validates reset token and new password
  */
-const resetPasswordSchema = {
-  // TODO: Define password reset with token validation schema
-  // - token: required, valid reset token
-  // - newPassword: required, minimum 8 characters, strong password
-  // - confirmPassword: required, must match newPassword
-};
+const resetPasswordSchema = Joi.object({
+  token: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'string.min': 'Reset token cannot be empty',
+      'any.required': 'Reset token is required'
+    }),
+  newPassword: Joi.string()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .required()
+    .messages({
+      'string.min': 'New password must be at least 8 characters long',
+      'string.pattern.base': 'New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+      'any.required': 'New password is required'
+    }),
+  confirmPassword: Joi.string()
+    .valid(Joi.ref('newPassword'))
+    .required()
+    .messages({
+      'any.only': 'Passwords do not match',
+      'any.required': 'Password confirmation is required'
+    })
+});
 
 /**
  * Schema for token refresh
  * Validates refresh token
  */
-const refreshTokenSchema = {
-  // TODO: Define refresh token validation schema
-  // - refreshToken: required, valid refresh token
-};
+const refreshTokenSchema = Joi.object({
+  refresh_token: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'string.min': 'Refresh token cannot be empty',
+      'any.required': 'Refresh token is required'
+    })
+});
 
 /**
  * Schema for account deletion
  * Validates password confirmation
  */
-const deleteAccountSchema = {
-  // TODO: Define account deletion validation schema
-  // - password: required, current password for confirmation
-  // - confirmDeletion: required, boolean true
-};
+const deleteAccountSchema = Joi.object({
+  password: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'string.min': 'Password cannot be empty',
+      'any.required': 'Password is required for account deletion'
+    }),
+  confirmDeletion: Joi.boolean()
+    .valid(true)
+    .required()
+    .messages({
+      'any.only': 'You must confirm account deletion',
+      'any.required': 'Account deletion confirmation is required'
+    })
+});
 
 module.exports = {
   registerSchema,

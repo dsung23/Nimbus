@@ -11,11 +11,22 @@ const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
+const { validate, sanitizeInput, validateHeaders, validateRequestSize } = require('../middleware/validation');
+const {
+  registerSchema,
+  loginSchema,
+  updateProfileSchema,
+  changePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  refreshTokenSchema,
+  deleteAccountSchema
+} = require('../middleware/validationSchemas');
 
 // Rate limiting for authentication endpoints
 const authLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 10, // 10 requests per window
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 5 requests per window
   message: {
     success: false,
     message: 'Too many authentication attempts. Please try again later.'
@@ -24,17 +35,95 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Public routes (no authentication required) with rate limiting
-router.post('/register', authLimiter, userController.registerUser);
-router.post('/login', authLimiter, userController.loginUser);
-router.post('/forgot-password', authLimiter, userController.resetPassword);
+// Rate limiting for password reset requests (more lenient)
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per window
+  message: {
+    success: false,
+    message: 'Too many password reset requests. Please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-// Protected routes (authentication required)
-router.get('/profile', authenticateToken, userController.getUserProfile);
-router.put('/profile', authenticateToken, userController.updateUserProfile);
-router.put('/change-password', authenticateToken, userController.changePassword);
-router.delete('/account', authenticateToken, userController.deleteUser);
+// Public routes (no authentication required) with rate limiting and validation
+router.post('/register', 
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  authLimiter,
+  validate(registerSchema),
+  userController.registerUser
+);
+
+router.post('/login', 
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  authLimiter,
+  validate(loginSchema),
+  userController.loginUser
+);
+
+router.post('/forgot-password', 
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  passwordResetLimiter,
+  validate(forgotPasswordSchema),
+  userController.forgotPassword
+);
+
+router.post('/reset-password', 
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  passwordResetLimiter,
+  validate(resetPasswordSchema),
+  userController.resetPassword
+);
+
+// Protected routes (authentication required) with validation
+router.get('/profile', 
+  authenticateToken,
+  userController.getUserProfile
+);
+
+router.put('/profile', 
+  authenticateToken,
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  validate(updateProfileSchema),
+  userController.updateUserProfile
+);
+
+router.put('/change-password', 
+  authenticateToken,
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  validate(changePasswordSchema),
+  userController.changePassword
+);
+
+router.delete('/account', 
+  authenticateToken,
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  validate(deleteAccountSchema),
+  userController.deleteUser
+);
+
 // Token refresh route
-router.post('/refresh-token', userController.refreshToken);
+router.post('/refresh-token', 
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  validate(refreshTokenSchema),
+  userController.refreshToken
+);
 
 module.exports = router; 

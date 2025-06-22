@@ -2,10 +2,13 @@
 // This file contains middleware functions for:
 // - Supabase JWT token verification
 // - User authentication
-// - Role-based access control
-// - Token refresh validation
 
 const { createClient } = require('@supabase/supabase-js');
+
+// Check for required environment variables
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  throw new Error('Missing required Supabase environment variables: SUPABASE_URL, SUPABASE_ANON_KEY');
+}
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -63,46 +66,54 @@ const authenticateToken = async (req, res, next) => {
 /**
  * Middleware to check if user has required role
  * Must be used after authenticateToken middleware
+ * TODO: Implement role-based access control
  */
 const requireRole = (requiredRole) => {
   return (req, res, next) => {
     // TODO: Implement role-based access control
     // 1. Check if user has required role
     // 2. Allow or deny access accordingly
+    next();
   };
 };
 
 /**
  * Middleware to check if user owns the resource
  * Must be used after authenticateToken middleware
+ * TODO: Implement resource ownership verification
  */
 const requireOwnership = (resourceType) => {
   return async (req, res, next) => {
     // TODO: Implement resource ownership verification
     // 1. Check if user owns the requested resource
     // 2. Allow or deny access accordingly
+    next();
   };
 };
 
 /**
  * Optional authentication middleware
  * Similar to authenticateToken but doesn't fail if no token provided
+ * TODO: Implement optional authentication
  */
 const optionalAuth = async (req, res, next) => {
   // TODO: Implement optional authentication
   // 1. Try to authenticate token if present
   // 2. Continue without user info if no token
+  next();
 };
 
 /**
  * Middleware to validate refresh tokens
  * Used specifically for token refresh endpoints
+ * TODO: Implement refresh token validation
  */
 const validateRefreshToken = async (req, res, next) => {
   // TODO: Implement refresh token validation
   // 1. Extract refresh token from request
   // 2. Verify refresh token
   // 3. Check if refresh token is valid and not expired
+  next();
 };
 
 module.exports = {

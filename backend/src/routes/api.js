@@ -10,8 +10,9 @@
 const express = require('express');
 const router = express.Router();
 
-// TODO: Import route modules
+// Import route modules
 const authRoutes = require('./auth');
+// TODO: Import additional route modules when they are created
 // const userRoutes = require('./user');
 // const accountRoutes = require('./account');
 // const transactionRoutes = require('./transaction');
@@ -37,6 +38,7 @@ router.get('/version', (req, res) => {
 
 // Mount route modules
 router.use('/auth', authRoutes);
+// TODO: Mount additional route modules when they are created
 // router.use('/users', userRoutes);
 // router.use('/accounts', accountRoutes);
 // router.use('/transactions', transactionRoutes);
@@ -49,10 +51,14 @@ router.use((req, res) => {
     error: 'Route not found',
     message: `The requested route ${req.originalUrl} does not exist`,
     availableRoutes: [
-      '/api/health',
-      '/api/version',
-      '/api/auth/register',
-      '/api/auth/login'
+      '/health',
+      '/version',
+      '/auth/register',
+      '/auth/login',
+      '/auth/forgot-password',
+      '/auth/reset-password',
+      '/auth/profile',
+      '/auth/refresh-token'
     ]
   });
 });

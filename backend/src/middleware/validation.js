@@ -5,9 +5,7 @@
 // - File upload validation
 // - Custom validation rules
 
-// TODO: Import validation library (e.g., Joi, Yup, or express-validator)
-// const Joi = require('joi');
-// const { validationResult } = require('express-validator');
+const Joi = require('joi');
 
 /**
  * Generic validation middleware that accepts a validation schema
@@ -15,10 +13,27 @@
  */
 const validate = (schema) => {
   return (req, res, next) => {
-    // TODO: Implement generic validation middleware
-    // 1. Validate request body, query, and params against schema
-    // 2. Return validation errors if any
-    // 3. Continue to next middleware if validation passes
+    const { error, value } = schema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true
+    });
+
+    if (error) {
+      const errorDetails = error.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message
+      }));
+
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errorDetails
+      });
+    }
+
+    // Replace request body with validated and sanitized data
+    req.body = value;
+    next();
   };
 };
 
@@ -27,39 +42,135 @@ const validate = (schema) => {
  * Formats and returns validation error responses
  */
 const handleValidationErrors = (req, res, next) => {
-  // TODO: Implement validation error handling
-  // 1. Check for validation errors
-  // 2. Format error response
-  // 3. Return appropriate HTTP status and error message
+  // This middleware is now integrated into the validate function
+  // Keeping for backward compatibility
+  next();
 };
 
 /**
  * Custom validation for email format
  */
 const validateEmail = (email) => {
-  // TODO: Implement email validation
-  // 1. Check email format using regex
-  // 2. Return true/false or throw error
+  const emailSchema = Joi.string().email({ tlds: { allow: false } });
+  const { error } = emailSchema.validate(email);
+  
+  if (error) {
+    throw new Error('Invalid email format');
+  }
+  
+  return true;
 };
 
 /**
  * Custom validation for password strength
  */
 const validatePassword = (password) => {
-  // TODO: Implement password strength validation
-  // 1. Check minimum length
-  // 2. Check for required character types
-  // 3. Return true/false or throw error
+  const passwordSchema = Joi.string()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/);
+  
+  const { error } = passwordSchema.validate(password);
+  
+  if (error) {
+    if (error.details[0].type === 'string.min') {
+      throw new Error('Password must be at least 8 characters long');
+    } else if (error.details[0].type === 'string.pattern.base') {
+      throw new Error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+    } else {
+      throw new Error('Invalid password format');
+    }
+  }
+  
+  return true;
 };
 
 /**
  * Sanitize user input to prevent XSS attacks
  */
 const sanitizeInput = (req, res, next) => {
-  // TODO: Implement input sanitization
-  // 1. Sanitize request body, query, and params
-  // 2. Remove potentially dangerous characters
-  // 3. Continue to next middleware
+  // Basic XSS prevention - remove script tags and dangerous characters
+  const sanitizeString = (str) => {
+    if (typeof str !== 'string') return str;
+    
+    return str
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .trim();
+  };
+
+  // Sanitize request body
+  if (req.body) {
+    Object.keys(req.body).forEach(key => {
+      if (typeof req.body[key] === 'string') {
+        req.body[key] = sanitizeString(req.body[key]);
+      }
+    });
+  }
+
+  // Sanitize query parameters
+  if (req.query) {
+    Object.keys(req.query).forEach(key => {
+      if (typeof req.query[key] === 'string') {
+        req.query[key] = sanitizeString(req.query[key]);
+      }
+    });
+  }
+
+  // Sanitize URL parameters
+  if (req.params) {
+    Object.keys(req.params).forEach(key => {
+      if (typeof req.params[key] === 'string') {
+        req.params[key] = sanitizeString(req.params[key]);
+      }
+    });
+  }
+
+  next();
+};
+
+/**
+ * Validate request headers
+ */
+const validateHeaders = (req, res, next) => {
+  const requiredHeaders = ['content-type'];
+  
+  for (const header of requiredHeaders) {
+    if (!req.headers[header]) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required header: ${header}`
+      });
+    }
+  }
+
+  // Validate content-type for POST/PUT requests
+  if ((req.method === 'POST' || req.method === 'PUT') && 
+      !req.headers['content-type'].includes('application/json')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Content-Type must be application/json'
+    });
+  }
+
+  next();
+};
+
+/**
+ * Validate request size limits
+ */
+const validateRequestSize = (req, res, next) => {
+  const maxSize = 1024 * 1024; // 1MB
+  
+  if (req.headers['content-length'] && parseInt(req.headers['content-length']) > maxSize) {
+    return res.status(413).json({
+      success: false,
+      message: 'Request body too large. Maximum size is 1MB.'
+    });
+  }
+
+  next();
 };
 
 module.exports = {
@@ -67,5 +178,7 @@ module.exports = {
   handleValidationErrors,
   validateEmail,
   validatePassword,
-  sanitizeInput
+  sanitizeInput,
+  validateHeaders,
+  validateRequestSize
 }; 

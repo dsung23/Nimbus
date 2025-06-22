@@ -13,12 +13,9 @@ require('dotenv').config();
 
 const { createClient } = require('@supabase/supabase-js');
 
-// Check if environment variables are loaded
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-  console.error('❌ Missing Supabase environment variables');
-  console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Missing');
-  console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'Set' : 'Missing');
-  console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing');
+// Check if required environment variables are loaded
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error('Missing required Supabase environment variables: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY');
 }
 
 // Initialize Supabase client
@@ -29,7 +26,7 @@ const supabase = createClient(
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // Add this to your .env
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 // ...existing validation code...
@@ -46,60 +43,14 @@ module.exports = {
         date_of_birth 
       } = req.body;
 
-      // Basic validation
-      if (!email || !password || !first_name || !last_name || !phone || !date_of_birth) {
-        return res.status(400).json({
-          success: false,
-          message: 'All fields are required: email, password, first_name, last_name, phone, date_of_birth'
-        });
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide a valid email address'
-        });
-      }
-
-      // Validate password strength
-      if (password.length < 8) {
-        return res.status(400).json({
-          success: false,
-          message: 'Password must be at least 8 characters long'
-        });
-      }
-
-      // Validate phone number format
-      if (!/^\+?[\d\s\-\(\)]+$/.test(phone)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide a valid phone number'
-        });
-      }
-
-      // Validate date of birth format and that it's not in the future
-      const dobDate = new Date(date_of_birth);
-      if (isNaN(dobDate.getTime()) || dobDate > new Date()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide a valid date of birth (YYYY-MM-DD format, not in future)'
-        });
-      }
-      // 18+
-      if (dobDate.getFullYear() + 18 > new Date().getFullYear()) {
+      // Validation is now handled by middleware - data is already validated and sanitized
+      // Additional age validation (18+ requirement) with exact calculation
+      const dob = new Date(date_of_birth);
+      const age = new Date(Date.now() - dob).getUTCFullYear() - 1970;
+      if (age < 18) {
         return res.status(400).json({
           success: false,
           message: 'You must be at least 18 years old to register'
-        });
-      }
-
-      // Validate last name is not empty
-      if (last_name.trim().length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Last name cannot be empty'
         });
       }
 
@@ -196,22 +147,7 @@ module.exports = {
     try {
       const { email, password } = req.body;
 
-      // Basic validation
-      if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email and password are required'
-        });
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide a valid email address'
-        });
-      }
+      // Validation is now handled by middleware - data is already validated and sanitized
 
       // 1. Authenticate with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -372,27 +308,7 @@ module.exports = {
         preferences 
       } = req.body;
 
-      // Validate inputs
-      if (first_name && first_name.trim().length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'First name cannot be empty'
-        });
-      }
-
-      if (phone && !/^\+?[\d\s\-\(\)]+$/.test(phone)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid phone number format'
-        });
-      }
-
-      if (date_of_birth && new Date(date_of_birth) > new Date()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Date of birth cannot be in the future'
-        });
-      }
+      // Validation is now handled by middleware - data is already validated and sanitized
 
       // Prepare update data (only include provided fields)
       const updateData = {
@@ -450,84 +366,42 @@ module.exports = {
   },
   
   changePassword: async (req, res) => {
-    console.log('🔧 Change Password endpoint called - DUMMY IMPLEMENTATION');
-    console.log('Request body:', req.body);
-    res.status(200).json({ 
-      success: true,
-      message: 'Change password endpoint called successfully (dummy implementation)',
-      note: 'This is a placeholder - functionality not yet implemented'
+    res.status(501).json({ 
+      success: false,
+      error: 'Not implemented',
+      message: 'Change password functionality is not yet implemented'
+    });
+  },
+  
+  forgotPassword: async (req, res) => {
+    res.status(501).json({ 
+      success: false,
+      error: 'Not implemented',
+      message: 'Forgot password functionality is not yet implemented'
     });
   },
   
   resetPassword: async (req, res) => {
-    console.log('🔧 Reset Password endpoint called - DUMMY IMPLEMENTATION');
-    console.log('Request body:', req.body);
-    res.status(200).json({ 
-      success: true,
-      message: 'Reset password endpoint called successfully (dummy implementation)',
-      note: 'This is a placeholder - functionality not yet implemented'
+    res.status(501).json({ 
+      success: false,
+      error: 'Not implemented',
+      message: 'Reset password functionality is not yet implemented'
     });
   },
   
   deleteUser: async (req, res) => {
-    console.log('🔧 Delete User endpoint called - DUMMY IMPLEMENTATION');
-    console.log('Request body:', req.body);
-    res.status(200).json({ 
-      success: true,
-      message: 'Delete user endpoint called successfully (dummy implementation)',
-      note: 'This is a placeholder - functionality not yet implemented'
+    res.status(501).json({ 
+      success: false,
+      error: 'Not implemented',
+      message: 'Delete user functionality is not yet implemented'
     });
   },
   
   refreshToken: async (req, res) => {
-    console.log('🔧 Refresh Token endpoint called - DUMMY IMPLEMENTATION');
-    console.log('Request body:', req.body);
-    res.status(200).json({ 
-      success: true,
-      message: 'Refresh token endpoint called successfully (dummy implementation)',
-      note: 'This is a placeholder - functionality not yet implemented'
+    res.status(501).json({ 
+      success: false,
+      error: 'Not implemented',
+      message: 'Token refresh functionality is not yet implemented'
     });
-
-
-    //possible implementtation
-    // try {
-    //   const { refresh_token } = req.body;
-  
-    //   if (!refresh_token) {
-    //     return res.status(400).json({
-    //       success: false,
-    //       message: 'Refresh token is required'
-    //     });
-    //   }
-  
-    //   // Use Supabase to refresh the token
-    //   const { data, error } = await supabase.auth.refreshSession({
-    //     refresh_token: refresh_token
-    //   });
-  
-    //   if (error) {
-    //     return res.status(401).json({
-    //       success: false,
-    //       message: 'Invalid or expired refresh token'
-    //     });
-    //   }
-  
-    //   res.status(200).json({
-    //     success: true,
-    //     message: 'Token refreshed successfully',
-    //     auth: {
-    //       access_token: data.session.access_token,
-    //       refresh_token: data.session.refresh_token,
-    //       expires_at: data.session.expires_at
-    //     }
-    //   });
-  
-    // } catch (error) {
-    //   console.error('Token refresh error:', error);
-    //   res.status(500).json({
-    //     success: false,
-    //     message: 'Internal server error',
-    //     error: error.message
-    //   });
   }
 }; 
