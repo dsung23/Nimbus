@@ -1,10 +1,10 @@
 // Account types for the carousel dashboard
 export interface Account {
   id: string;
-  type: 'Savings' | 'Checking' | 'Credit';
+  type: 'checking' | 'savings' | 'credit' | 'loan' | 'investment';
   name: string;
   balance: number;
-  lastFourDigits: string;
+  mask: string;
   gradientColors: readonly [string, string];
 }
 

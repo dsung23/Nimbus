@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import styled from 'styled-components/native';
 import { AccountCarousel } from '../components/AccountCarousel';
@@ -21,10 +22,8 @@ const ScrollContainer = styled(ScrollView)`
 
 const Header = styled.View`
   flex-direction: row;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  padding-top: 20px;
 `;
 
 const HeaderTitle = styled.Text`
@@ -82,34 +81,34 @@ const ErrorText = styled.Text`
 const mockAccounts: Account[] = [
   {
     id: '1',
-    type: 'Savings',
+    type: 'savings',
     name: 'Primary Savings',
     balance: 15420.75,
-    lastFourDigits: '1234',
+    mask: '1234',
     gradientColors: ['#667eea', '#764ba2'] as const,
   },
   {
     id: '2',
-    type: 'Checking',
+    type: 'checking',
     name: 'Main Checking',
     balance: 3245.50,
-    lastFourDigits: '5678',
+    mask: '5678',
     gradientColors: ['#f093fb', '#f5576c'] as const,
   },
   {
     id: '3',
-    type: 'Credit',
+    type: 'credit',
     name: 'Chase Freedom',
     balance: 8749.70,
-    lastFourDigits: '9012',
+    mask: '9012',
     gradientColors: ['#4facfe', '#00f2fe'] as const,
   },
   {
     id: '4',
-    type: 'Savings',
-    name: 'Emergency Fund',
-    balance: 8500.00,
-    lastFourDigits: '3456',
+    type: 'investment',
+    name: 'Robinhood',
+    balance: 25500.00,
+    mask: '3456',
     gradientColors: ['#43e97b', '#38f9d7'] as const,
   },
 ];
@@ -148,13 +147,15 @@ export const DashboardScreen: React.FC = () => {
   if (state.isLoading) {
     return (
       <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
+        colors={['#050505', '#111111']}
         style={{ flex: 1 }}
       >
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        <LoadingContainer>
-          <ActivityIndicator size="large" color="#ffffff" />
-        </LoadingContainer>
+        <SafeAreaView style={{ flex: 1 }}>
+          <LoadingContainer>
+            <ActivityIndicator size="large" color="#ffffff" />
+          </LoadingContainer>
+        </SafeAreaView>
       </LinearGradient>
     );
   }
@@ -162,27 +163,29 @@ export const DashboardScreen: React.FC = () => {
   if (state.error) {
     return (
       <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
+        colors={['#050505', '#111111']}
         style={{ flex: 1 }}
       >
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        <ErrorContainer>
-          <ErrorText>{state.error}</ErrorText>
-        </ErrorContainer>
+        <SafeAreaView style={{ flex: 1 }}>
+          <ErrorContainer>
+            <ErrorText>{state.error}</ErrorText>
+          </ErrorContainer>
+        </SafeAreaView>
       </LinearGradient>
     );
   }
 
   return (
     <LinearGradient
-      colors={['#1a1a2e', '#16213e', '#0f3460']}
+      colors={['#050505', '#111111']}
       style={{ flex: 1 }}
     >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       {/* Overlay gradient for glassmorphism effect */}
       <LinearGradient
-        colors={['rgba(102, 126, 234, 0.3)', 'rgba(118, 75, 162, 0.3)']}
+        colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0)']}
         style={{
           position: 'absolute',
           top: 0,
@@ -192,18 +195,17 @@ export const DashboardScreen: React.FC = () => {
         }}
       />
       
-      <ScrollContainer showsVerticalScrollIndicator={false}>
-        <Header>
-          <HeaderTitle>Dashboard</HeaderTitle>
-          <AvatarContainer>
-            <AvatarText>👤</AvatarText>
-          </AvatarContainer>
-        </Header>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollContainer showsVerticalScrollIndicator={false}>
+          <Header>
+            <HeaderTitle>Dashboard</HeaderTitle>
+          </Header>
 
-        <SectionTitle>Your Accounts</SectionTitle>
-        
-        <AccountCarousel accounts={state.accounts} />
-      </ScrollContainer>
+          <SectionTitle>Your Accounts</SectionTitle>
+          
+          <AccountCarousel accounts={state.accounts} />
+        </ScrollContainer>
+      </SafeAreaView>
     </LinearGradient>
   );
 }; 

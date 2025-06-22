@@ -108,9 +108,10 @@ const LastFourDigits = styled.Text`
 // Helper function to get account icon
 const getAccountIcon = (type: string): string => {
   switch (type) {
-    case 'Savings': return '💰';
-    case 'Checking': return '💳';
-    case 'Credit': return '💳';
+    case 'savings': return '💰';
+    case 'checking': return '💳';
+    case 'credit': return '💳';
+    case 'investment': return '📈';
     default: return '🏦';
   }
 };
@@ -154,7 +155,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({ account, animatedStyle
             <BalanceLabel>Balance</BalanceLabel>
             <BalanceAmount>{formatCurrency(account.balance)}</BalanceAmount>
           </BalanceContainer>
-          <LastFourDigits>•••• {account.lastFourDigits}</LastFourDigits>
+          <LastFourDigits>•••• {account.mask}</LastFourDigits>
         </CardFooter>
       </GradientBackground>
     </CardContainer>
