@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import styled from 'styled-components/native';
 import { AccountCarousel } from '../components/AccountCarousel';
 import { Account, DashboardState } from '../types/account';
+import { Background } from '../components/Background';
 
 // Styled components for glassmorphism dashboard
 const Container = styled.View`
@@ -146,66 +144,35 @@ export const DashboardScreen: React.FC = () => {
 
   if (state.isLoading) {
     return (
-      <LinearGradient
-        colors={['#050505', '#111111']}
-        style={{ flex: 1 }}
-      >
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        <SafeAreaView style={{ flex: 1 }}>
-          <LoadingContainer>
-            <ActivityIndicator size="large" color="#ffffff" />
-          </LoadingContainer>
-        </SafeAreaView>
-      </LinearGradient>
+      <Background>
+        <LoadingContainer>
+          <ActivityIndicator size="large" color="#ffffff" />
+        </LoadingContainer>
+      </Background>
     );
   }
 
   if (state.error) {
     return (
-      <LinearGradient
-        colors={['#050505', '#111111']}
-        style={{ flex: 1 }}
-      >
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        <SafeAreaView style={{ flex: 1 }}>
-          <ErrorContainer>
-            <ErrorText>{state.error}</ErrorText>
-          </ErrorContainer>
-        </SafeAreaView>
-      </LinearGradient>
+      <Background>
+        <ErrorContainer>
+          <ErrorText>{state.error}</ErrorText>
+        </ErrorContainer>
+      </Background>
     );
   }
 
   return (
-    <LinearGradient
-      colors={['#050505', '#111111']}
-      style={{ flex: 1 }}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      {/* Overlay gradient for glassmorphism effect */}
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0)']}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
-      />
-      
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollContainer showsVerticalScrollIndicator={false}>
-          <Header>
-            <HeaderTitle>Dashboard</HeaderTitle>
-          </Header>
+    <Background>
+      <ScrollContainer showsVerticalScrollIndicator={false}>
+        <Header>
+          <HeaderTitle>Dashboard</HeaderTitle>
+        </Header>
 
-          <SectionTitle>Your Accounts</SectionTitle>
-          
-          <AccountCarousel accounts={state.accounts} />
-        </ScrollContainer>
-      </SafeAreaView>
-    </LinearGradient>
+        <SectionTitle>Your Accounts</SectionTitle>
+        
+        <AccountCarousel accounts={state.accounts} />
+      </ScrollContainer>
+    </Background>
   );
 }; 

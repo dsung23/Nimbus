@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacit
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import styled from 'styled-components/native';
+import { Background } from '../components/Background';
 
 import { User } from '../types/user';
 import { ProfileHeader } from '../components/ProfileHeader';
@@ -103,64 +104,59 @@ export const ProfileScreen: React.FC = () => {
 
   if (isLoading || !user) {
     return (
-      <LinearGradient colors={['#050505', '#111111']} style={{ flex: 1 }}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <LoadingContainer>
-            <ActivityIndicator size="large" color="#ffffff" />
-          </LoadingContainer>
-        </SafeAreaView>
-      </LinearGradient>
+      <Background>
+        <LoadingContainer>
+          <ActivityIndicator size="large" color="#ffffff" />
+        </LoadingContainer>
+      </Background>
     );
   }
 
   return (
-    <Container>
-      <LinearGradient colors={['#050505', '#111111']} style={StyleSheet.absoluteFill} />
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-          <ProfileHeader user={user} />
-          
-          <View style={{ paddingHorizontal: 16 }}>
-            <ProfileSection title="Personal Information">
-              <InfoRow
-                label="Email Address"
-                value={user.email}
-                icon="mail"
-                isTappable
-                onPress={() => setEditingField({ field: 'email', label: 'Edit Email Address', currentValue: user.email })}
-              />
-              <InfoRow
-                label="Phone Number"
-                value={user.phoneNumber}
-                icon="call"
-                isTappable
-                onPress={() => setEditingField({ field: 'phoneNumber', label: 'Edit Phone Number', currentValue: user.phoneNumber })}
-              />
-              <InfoRow
-                label="Date of Birth"
-                value={new Date(user.dateOfBirth).toLocaleDateString()}
-                icon="calendar"
-                isTappable
-                onPress={() => setEditingField({ field: 'dateOfBirth', label: 'Edit Date of Birth', currentValue: user.dateOfBirth })}
-              />
-            </ProfileSection>
+    <Background>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        <ProfileHeader user={user} />
+        
+        <View style={{ paddingHorizontal: 16 }}>
+          <ProfileSection title="Personal Information">
+            <InfoRow
+              label="Email Address"
+              value={user.email}
+              icon="mail"
+              isTappable
+              onPress={() => setEditingField({ field: 'email', label: 'Edit Email Address', currentValue: user.email })}
+            />
+            <InfoRow
+              label="Phone Number"
+              value={user.phoneNumber}
+              icon="call"
+              isTappable
+              onPress={() => setEditingField({ field: 'phoneNumber', label: 'Edit Phone Number', currentValue: user.phoneNumber })}
+            />
+            <InfoRow
+              label="Date of Birth"
+              value={new Date(user.dateOfBirth).toLocaleDateString()}
+              icon="calendar"
+              isTappable
+              onPress={() => setEditingField({ field: 'dateOfBirth', label: 'Edit Date of Birth', currentValue: user.dateOfBirth })}
+            />
+          </ProfileSection>
 
-            <ProfileSection title="Account & Security">
-              <InfoRow
-                label="Change Password"
-                icon="lock-closed"
-                isTappable
-                onPress={() => setIsPasswordModalVisible(true)}
-              />
-            </ProfileSection>
+          <ProfileSection title="Account & Security">
+            <InfoRow
+              label="Change Password"
+              icon="lock-closed"
+              isTappable
+              onPress={() => setIsPasswordModalVisible(true)}
+            />
+          </ProfileSection>
 
-            <LogoutButton onPress={() => Alert.alert('Log Out', 'User logged out.')}>
-              <LogoutButtonText>Log Out</LogoutButtonText>
-            </LogoutButton>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-      
+          <LogoutButton onPress={() => Alert.alert('Log Out', 'User logged out.')}>
+            <LogoutButtonText>Log Out</LogoutButtonText>
+          </LogoutButton>
+        </View>
+      </ScrollView>
+
       {editingField && (
         <EditInfoModal
           isVisible={!!editingField}
@@ -176,6 +172,6 @@ export const ProfileScreen: React.FC = () => {
         onClose={() => setIsPasswordModalVisible(false)}
         onSave={handlePasswordSave}
       />
-    </Container>
+    </Background>
   );
 }; 
