@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import styled from 'styled-components/native';
 import { Background } from '../components/Background';
+import { useAuth } from '../contexts/AuthContext';
 
 import { User } from '../types/user';
 import { ProfileHeader } from '../components/ProfileHeader';
@@ -55,6 +56,7 @@ const LogoutButtonText = styled.Text`
 `;
 
 export const ProfileScreen: React.FC = () => {
+  const { signOut } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editingField, setEditingField] = useState<EditingField | null>(null);
@@ -100,6 +102,31 @@ export const ProfileScreen: React.FC = () => {
       Alert.alert('Success', 'Your password has been changed.');
     }
     setIsLoading(false);
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              console.log('User logged out successfully');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to log out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (isLoading || !user) {
@@ -151,7 +178,7 @@ export const ProfileScreen: React.FC = () => {
             />
           </ProfileSection>
 
-          <LogoutButton onPress={() => Alert.alert('Log Out', 'User logged out.')}>
+          <LogoutButton onPress={handleLogout}>
             <LogoutButtonText>Log Out</LogoutButtonText>
           </LogoutButton>
         </View>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   ActivityIndicator,
+  Text,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { AccountCarousel } from '../components/AccountCarousel';

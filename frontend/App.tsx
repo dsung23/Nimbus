@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -9,6 +9,8 @@ import { DashboardScreen } from './src/screens/DashboardScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { GlassmorphicTabBar } from './src/components/GlassmorphicTabBar';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { User } from './src/types/user';
 
 const Tab = createBottomTabNavigator();
 
@@ -36,11 +38,30 @@ const DevBypass: React.FC<{ isAuthenticated: boolean; onToggle: () => void }> = 
   </TouchableOpacity>
 );
 
-export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Start with auth flow
+const AppContent: React.FC = () => {
+  const { isAuthenticated, signOut, signIn } = useAuth();
 
-  const toggleAuth = () => {
-    setIsAuthenticated(!isAuthenticated);
+  const toggleAuth = async () => {
+    if (isAuthenticated) {
+      await signOut();
+    } else {
+      // For dev bypass, simulate a login with mock user
+      const mockUser: User = {
+        id: 'dev-user-123',
+        fullName: 'Dev User',
+        email: 'dev@example.com',
+        phoneNumber: '+1 (555) 123-4567',
+        dateOfBirth: '1990-01-01',
+        memberSince: '2024-01-01',
+      };
+      
+      try {
+        await signIn(mockUser);
+        console.log('Dev bypass: signed in as', mockUser.fullName);
+      } catch (error) {
+        console.error('Dev bypass: failed to sign in', error);
+      }
+    }
   };
 
   return (
@@ -49,6 +70,14 @@ export default function App() {
       {isAuthenticated ? <AppTabs /> : <AuthNavigator />}
       <DevBypass isAuthenticated={isAuthenticated} onToggle={toggleAuth} />
     </NavigationContainer>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
