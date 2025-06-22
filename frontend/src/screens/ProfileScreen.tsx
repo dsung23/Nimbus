@@ -9,7 +9,9 @@ import { ProfileHeader } from '../components/ProfileHeader';
 import { ProfileSection } from '../components/ProfileSection';
 import { InfoRow } from '../components/InfoRow';
 import { EditInfoModal } from '../components/EditInfoModal';
+import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { updateUserProfile } from '../api/userService';
+import { updateUserPassword } from '../api/authService';
 
 const mockUser: User = {
   id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
@@ -55,6 +57,7 @@ export const ProfileScreen: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editingField, setEditingField] = useState<EditingField | null>(null);
+  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
 
   useEffect(() => {
     // Simulate loading user data
@@ -64,7 +67,7 @@ export const ProfileScreen: React.FC = () => {
     }, 1000);
   }, []);
 
-  const handleSave = async (newValue: string) => {
+  const handleSaveInfo = async (newValue: string) => {
     if (!editingField) return;
 
     setIsLoading(true);
@@ -77,6 +80,23 @@ export const ProfileScreen: React.FC = () => {
       setUser(data);
     } else {
       Alert.alert('Error', 'Failed to update profile.');
+    }
+    setIsLoading(false);
+  };
+
+  const handlePasswordSave = async (currentPassword: string, newPassword: string) => {
+    setIsLoading(true);
+    setIsPasswordModalVisible(false);
+
+    // In a real app, you might validate the currentPassword first
+    console.log('Validating current password (placeholder):', currentPassword);
+
+    const { error } = await updateUserPassword(newPassword);
+
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      Alert.alert('Success', 'Your password has been changed.');
     }
     setIsLoading(false);
   };
@@ -130,7 +150,7 @@ export const ProfileScreen: React.FC = () => {
                 label="Change Password"
                 icon="lock-closed"
                 isTappable
-                onPress={() => Alert.alert('Navigate', 'Navigate to Change Password screen.')}
+                onPress={() => setIsPasswordModalVisible(true)}
               />
             </ProfileSection>
 
@@ -145,11 +165,17 @@ export const ProfileScreen: React.FC = () => {
         <EditInfoModal
           isVisible={!!editingField}
           onClose={() => setEditingField(null)}
-          onSave={handleSave}
+          onSave={handleSaveInfo}
           label={editingField.label}
           initialValue={editingField.currentValue}
         />
       )}
+
+      <ChangePasswordModal
+        isVisible={isPasswordModalVisible}
+        onClose={() => setIsPasswordModalVisible(false)}
+        onSave={handlePasswordSave}
+      />
     </Container>
   );
 }; 
