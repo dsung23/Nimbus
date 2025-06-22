@@ -9,7 +9,7 @@ const CardContainer = styled(Animated.View)`
   width: 320px;
   height: 200px;
   border-radius: 24px;
-  margin-horizontal: 8px;
+  margin-horizontal: 4px;
   overflow: hidden;
   shadow-color: #000;
   shadow-offset: 0px 8px;

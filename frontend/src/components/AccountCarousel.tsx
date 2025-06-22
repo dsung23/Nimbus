@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import {
   FlatList,
   Animated,
@@ -13,19 +13,34 @@ import { Account } from '../types/account';
 const { width: screenWidth } = Dimensions.get('window');
 const CARD_WIDTH = 320;
 const CARD_SPACING = 16;
-const CARD_OFFSET = (screenWidth - CARD_WIDTH) / 2;
+const CARD_OFFSET = (screenWidth - CARD_WIDTH) / 2 - CARD_SPACING / 2;
 
-const CarouselContainer = styled.View`
-  height: 240px;
+const RootContainer = styled.View`
   margin-vertical: 20px;
 `;
 
-// Create animated FlatList for native driver support
-const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<Account>);
-
-const CarouselFlatList = styled(AnimatedFlatList)`
-  flex: 1;
+const CarouselContainer = styled.View`
+  height: 240px;
 `;
+
+const PaginationContainer = styled.View`
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+`;
+
+const Dot = styled(Animated.View)`
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: #fff;
+  margin: 0 5px;
+`;
+
+const AnimatedFlatList = Animated.createAnimatedComponent(
+  FlatList as new () => FlatList<Account>
+);
 
 interface AccountCarouselProps {
   accounts: Account[];
@@ -33,61 +48,44 @@ interface AccountCarouselProps {
 
 export const AccountCarousel: React.FC<AccountCarouselProps> = ({ accounts }) => {
   const scrollX = useRef(new Animated.Value(0)).current;
-  const [activeIndex, setActiveIndex] = useState(0);
 
   const renderCard: ListRenderItem<Account> = ({ item, index }) => {
+    const itemWidth = CARD_WIDTH + CARD_SPACING;
     const inputRange = [
-      (index - 1) * (CARD_WIDTH + CARD_SPACING),
-      index * (CARD_WIDTH + CARD_SPACING),
-      (index + 1) * (CARD_WIDTH + CARD_SPACING),
+      (index - 1) * itemWidth,
+      index * itemWidth,
+      (index + 1) * itemWidth,
     ];
 
-    // Scale animation
     const scale = scrollX.interpolate({
       inputRange,
-      outputRange: [0.8, 1, 0.8],
+      outputRange: [0.85, 1, 0.85],
       extrapolate: 'clamp',
     });
 
-    // TranslateY animation for stacked effect
+    const opacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.7, 1, 0.7],
+      extrapolate: 'clamp',
+    });
+
     const translateY = scrollX.interpolate({
       inputRange,
       outputRange: [20, 0, 20],
       extrapolate: 'clamp',
     });
 
-    // Opacity animation
-    const opacity = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.6, 1, 0.6],
-      extrapolate: 'clamp',
-    });
-
     const animatedStyle = {
-      transform: [
-        { scale },
-        { translateY },
-      ],
+      transform: [{ scale }, { translateY }],
       opacity,
     };
 
     return (
-      <View style={{ width: CARD_WIDTH + CARD_SPACING }}>
+      <View style={{ width: itemWidth }}>
         <AccountCard account={item} animatedStyle={animatedStyle} />
       </View>
     );
   };
-
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-    {
-      useNativeDriver: true,
-      listener: (event: any) => {
-        const index = Math.round(event.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_SPACING));
-        setActiveIndex(index);
-      },
-    }
-  );
 
   const getItemLayout = (_: any, index: number) => ({
     length: CARD_WIDTH + CARD_SPACING,
@@ -96,24 +94,52 @@ export const AccountCarousel: React.FC<AccountCarouselProps> = ({ accounts }) =>
   });
 
   return (
-    <CarouselContainer>
-      <CarouselFlatList
-        data={accounts}
-        renderItem={renderCard}
-        keyExtractor={(item) => item.id}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={CARD_WIDTH + CARD_SPACING}
-        snapToAlignment="center"
-        decelerationRate="fast"
-        contentContainerStyle={{
-          paddingHorizontal: CARD_OFFSET,
-        }}
-        onScroll={handleScroll}
-        getItemLayout={getItemLayout}
-        pagingEnabled={false}
-        scrollEventThrottle={16}
-      />
-    </CarouselContainer>
+    <RootContainer>
+      <CarouselContainer>
+        <Animated.FlatList
+          data={accounts}
+          renderItem={renderCard}
+          keyExtractor={(item: Account) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={CARD_WIDTH + CARD_SPACING}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          contentContainerStyle={{
+            paddingHorizontal: CARD_OFFSET,
+          }}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+            { useNativeDriver: true }
+          )}
+          getItemLayout={getItemLayout}
+          scrollEventThrottle={16}
+        />
+      </CarouselContainer>
+      <PaginationContainer>
+        {accounts.map((_, i) => {
+          const itemWidth = CARD_WIDTH + CARD_SPACING;
+          const inputRange = [
+            (i - 1) * itemWidth,
+            i * itemWidth,
+            (i + 1) * itemWidth,
+          ];
+
+          const opacity = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.5, 1, 0.5],
+            extrapolate: 'clamp',
+          });
+
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [1, 1.5, 1],
+            extrapolate: 'clamp',
+          });
+
+          return <Dot key={`dot-${i}`} style={{ opacity, transform: [{ scale }] }} />;
+        })}
+      </PaginationContainer>
+    </RootContainer>
   );
 }; 
