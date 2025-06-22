@@ -87,6 +87,13 @@ module.exports = {
           message: 'Please provide a valid date of birth (YYYY-MM-DD format, not in future)'
         });
       }
+      // 18+
+      if (dobDate.getFullYear() + 18 > new Date().getFullYear()) {
+        return res.status(400).json({
+          success: false,
+          message: 'You must be at least 18 years old to register'
+        });
+      }
 
       // Validate last name is not empty
       if (last_name.trim().length === 0) {
@@ -294,18 +301,10 @@ module.exports = {
   
   getUserProfile: async (req, res) => {
     try {
-      // For now, get user ID from query params or body since we don't have auth middleware
-      // TODO: Replace with proper auth middleware extraction
-      const userId = req.query.userId || req.body.userId || req.user?.id;
+      // Get user ID from authentication middleware
+      const userId = req.user.id;
 
       console.log('🔧 Debug: getUserProfile called with userId:', userId);
-
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: 'User ID is required (provide userId in query params or body until auth middleware is implemented)'
-        });
-      }
 
       // Get user profile data - use .maybeSingle() for better error handling
       const { data: profileData, error: profileError } = await supabaseAdmin
@@ -362,16 +361,8 @@ module.exports = {
   
   updateUserProfile: async (req, res) => {
     try {
-      // For now, get user ID from query params or body since we don't have auth middleware
-      // TODO: Replace with proper auth middleware extraction
-      const userId = req.query.userId || req.body.userId || req.user?.id;
-
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: 'User ID is required (provide userId in query params or body until auth middleware is implemented)'
-        });
-      }
+      // Get user ID from authentication middleware
+      const userId = req.user.id;
 
       const { 
         first_name, 
@@ -496,5 +487,47 @@ module.exports = {
       message: 'Refresh token endpoint called successfully (dummy implementation)',
       note: 'This is a placeholder - functionality not yet implemented'
     });
+
+
+    //possible implementtation
+    // try {
+    //   const { refresh_token } = req.body;
+  
+    //   if (!refresh_token) {
+    //     return res.status(400).json({
+    //       success: false,
+    //       message: 'Refresh token is required'
+    //     });
+    //   }
+  
+    //   // Use Supabase to refresh the token
+    //   const { data, error } = await supabase.auth.refreshSession({
+    //     refresh_token: refresh_token
+    //   });
+  
+    //   if (error) {
+    //     return res.status(401).json({
+    //       success: false,
+    //       message: 'Invalid or expired refresh token'
+    //     });
+    //   }
+  
+    //   res.status(200).json({
+    //     success: true,
+    //     message: 'Token refreshed successfully',
+    //     auth: {
+    //       access_token: data.session.access_token,
+    //       refresh_token: data.session.refresh_token,
+    //       expires_at: data.session.expires_at
+    //     }
+    //   });
+  
+    // } catch (error) {
+    //   console.error('Token refresh error:', error);
+    //   res.status(500).json({
+    //     success: false,
+    //     message: 'Internal server error',
+    //     error: error.message
+    //   });
   }
 }; 
