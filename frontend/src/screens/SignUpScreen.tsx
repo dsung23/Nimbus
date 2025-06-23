@@ -1,21 +1,237 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import styled from 'styled-components/native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthInput } from '../components/AuthInput';
+import { DatePicker } from '../components/DatePicker';
+import { AuthButton } from '../components/AuthButton';
+import { Background } from '../components/Background';
+import { AuthStackParamList } from '../navigation/AuthNavigator';
+import { signUpWithEmail } from '../api/authService';
+import { useAuth } from '../contexts/AuthContext';
 
-export const SignUpScreen: React.FC = () => (
-  <View style={styles.container}>
-    <Text style={styles.text}>Sign Up Screen</Text>
-  </View>
-);
+type SignUpScreenNavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  'SignUp'
+>;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#050505',
-  },
-  text: {
-    color: '#fff',
-    fontSize: 24,
-  },
-}); 
+const Container = styled.View`
+  flex: 1;
+  justify-content: center;
+  padding: 24px;
+`;
+
+const HeaderTitle = styled.Text`
+  font-size: 32px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 40px;
+  letter-spacing: -0.5px;
+`;
+
+const FormContainer = styled.View`
+  width: 100%;
+`;
+
+const ErrorContainer = styled.View`
+  background-color: rgba(255, 75, 75, 0.2);
+  border: 1px solid rgba(255, 75, 75, 0.4);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 20px;
+`;
+
+const ErrorText = styled.Text`
+  color: #ff4b4b;
+  font-size: 14px;
+  text-align: center;
+`;
+
+export const SignUpScreen: React.FC = () => {
+  const navigation = useNavigation<SignUpScreenNavigationProp>();
+  const { signIn } = useAuth();
+  
+  // Form state management
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const validateForm = (): boolean => {
+    // Check for required fields
+    if (!firstName.trim() || !lastName.trim() || !dateOfBirth.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
+      setError('Please fill in all fields.');
+      return false;
+    }
+
+    // Validate email format
+    if (!email.includes('@') || !email.includes('.')) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return false;
+    }
+
+    // Validate phone number (basic check for +1 format)
+    if (!phoneNumber.startsWith('+1') || phoneNumber.length < 10) {
+      setError('Please enter a valid phone number (+1 XXX XXX XXXX).');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSignUp = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { user, session, error: signUpError } = await signUpWithEmail(
+        email,
+        password,
+        {
+          fullName: `${firstName.trim()} ${lastName.trim()}`,
+          dateOfBirth: dateOfBirth.trim(),
+          phoneNumber: phoneNumber.trim(),
+        }
+      );
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      if (user && session) {
+        // Sign in the user through the auth context
+        await signIn(user);
+        
+        // Show success message
+        Alert.alert(
+          'Account Created!',
+          'Welcome to Cofund! Your account has been created successfully.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                console.log('User signed up successfully:', user.fullName);
+              },
+            },
+          ]
+        );
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Background>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Container>
+            <HeaderTitle>Create Your Account</HeaderTitle>
+
+            <FormContainer>
+              {error && (
+                <ErrorContainer>
+                  <ErrorText>{error}</ErrorText>
+                </ErrorContainer>
+              )}
+
+              <AuthInput
+                label="First Name"
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="Enter your first name"
+                icon="person"
+                autoCapitalize="words"
+                autoComplete="off"
+              />
+
+              <AuthInput
+                label="Last Name"
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Enter your last name"
+                icon="person"
+                autoCapitalize="words"
+                autoComplete="off"
+              />
+
+              <DatePicker
+                label="Date of Birth"
+                value={dateOfBirth}
+                onChangeText={setDateOfBirth}
+                placeholder="Select your date of birth"
+                icon="calendar"
+              />
+
+              <AuthInput
+                label="Email Address"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Enter your email"
+                icon="mail"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+
+              <AuthInput
+                label="Phone Number"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                placeholder="+1 XXX XXX XXXX"
+                icon="call"
+                keyboardType="phone-pad"
+                autoComplete="off"
+              />
+
+              <AuthInput
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Create a password"
+                secureTextEntry
+                icon="lock-closed"
+                autoComplete="password"
+              />
+
+              <AuthButton
+                title={isLoading ? 'Creating Account...' : 'Create Account'}
+                variant="primary"
+                onPress={handleSignUp}
+              />
+            </FormContainer>
+          </Container>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Background>
+  );
+}; 

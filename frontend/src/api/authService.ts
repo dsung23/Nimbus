@@ -40,6 +40,51 @@ export const signInWithEmail = async (
   }
 };
 
+export const signUpWithEmail = async (
+  email: string,
+  password: string,
+  userData: {
+    fullName: string;
+    dateOfBirth: string;
+    phoneNumber: string;
+  }
+): Promise<{ user: User | null; session: any | null; error: { message: string } | null }> => {
+  console.log('Simulating API call to sign up with:', { email, ...userData });
+
+  // In a real Supabase call, additional user data is passed in the options object.
+  // const { data, error } = await supabase.auth.signUp({
+  //   email: email,
+  //   password: password,
+  //   options: {
+  //     data: {
+  //       full_name: userData.fullName,
+  //       date_of_birth: userData.dateOfBirth,
+  //       phone_number: userData.phoneNumber,
+  //     }
+  //   }
+  // });
+
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // Simulate a successful sign-up
+  if (email.includes('@')) {
+    const newUser: User = {
+      id: `new-user-${Date.now()}`,
+      fullName: userData.fullName,
+      email: email,
+      phoneNumber: userData.phoneNumber,
+      dateOfBirth: userData.dateOfBirth,
+      memberSince: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+    };
+
+    return { user: newUser, session: mockSession, error: null };
+  } else {
+    // Simulate a failure
+    return { user: null, session: null, error: { message: 'Invalid email address.' } };
+  }
+};
+
 export const updateUserPassword = async (
   newPassword: string
 ): Promise<{ error: { message: string } | null }> => {
