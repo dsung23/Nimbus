@@ -1,8 +1,8 @@
 import React from 'react';
-import { TextInput, View, Text, StyleSheet } from 'react-native';
+import { TextInput, View } from 'react-native';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { FormField } from './FormField';
 
 interface AuthInputProps {
   label: string;
@@ -14,24 +14,12 @@ interface AuthInputProps {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   autoComplete?: 'email' | 'password' | 'off';
+  error?: string;
 }
 
-const InputContainer = styled.View`
-  margin-bottom: 20px;
-`;
-
-const Label = styled.Text`
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 8px;
-  font-weight: 500;
-`;
-
-const InputWrapper = styled.View`
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+const InputContentWrapper = styled.View`
+  flex-direction: row;
+  align-items: center;
 `;
 
 const StyledTextInput = styled(TextInput)`
@@ -39,6 +27,7 @@ const StyledTextInput = styled(TextInput)`
   color: #ffffff;
   font-size: 16px;
   font-weight: 500;
+  flex: 1;
 `;
 
 const IconContainer = styled.View`
@@ -51,46 +40,26 @@ const IconContainer = styled.View`
   width: 20px;
 `;
 
-const ErrorText = styled.Text`
-  font-size: 12px;
-  color: #ff4b4b;
-  margin-top: 4px;
-  margin-left: 4px;
-`;
-
 export const AuthInput: React.FC<AuthInputProps> = ({
   label,
-  value,
-  onChangeText,
-  placeholder,
-  secureTextEntry = false,
   icon,
-  autoCapitalize = 'none',
-  keyboardType = 'default',
-  autoComplete = 'off',
+  error,
+  ...textInputProps
 }) => {
   return (
-    <InputContainer>
-      <Label>{label}</Label>
-      <InputWrapper>
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+    <FormField label={label} error={error}>
+      <InputContentWrapper>
         {icon && (
           <IconContainer>
             <Ionicons name={icon} size={20} color="rgba(255, 255, 255, 0.7)" />
           </IconContainer>
         )}
         <StyledTextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
+          {...textInputProps}
           placeholderTextColor="rgba(255, 255, 255, 0.5)"
-          secureTextEntry={secureTextEntry}
-          autoCapitalize={autoCapitalize}
-          keyboardType={keyboardType}
-          autoComplete={autoComplete}
           style={{ paddingLeft: icon ? 50 : 18 }}
         />
-      </InputWrapper>
-    </InputContainer>
+      </InputContentWrapper>
+    </FormField>
   );
 }; 

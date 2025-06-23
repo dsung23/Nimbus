@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthInput } from '../components/AuthInput';
 import { DatePicker } from '../components/DatePicker';
+import { PhoneNumberInput } from '../components/PhoneNumberInput';
 import { AuthButton } from '../components/AuthButton';
 import { Background } from '../components/Background';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
@@ -87,9 +88,9 @@ export const SignUpScreen: React.FC = () => {
       return false;
     }
 
-    // Validate phone number (basic check for +1 format)
-    if (!phoneNumber.startsWith('+1') || phoneNumber.length < 10) {
-      setError('Please enter a valid phone number (+1 XXX XXX XXXX).');
+    // Validate phone number (basic check for digits)
+    if (phoneNumber.length < 10) {
+      setError('Please enter a valid phone number.');
       return false;
     }
 
@@ -121,22 +122,13 @@ export const SignUpScreen: React.FC = () => {
       }
 
       if (user && session) {
-        // Sign in the user through the auth context
-        await signIn(user);
-        
-        // Show success message
-        Alert.alert(
-          'Account Created!',
-          'Welcome to Cofund! Your account has been created successfully.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                console.log('User signed up successfully:', user.fullName);
-              },
-            },
-          ]
-        );
+        // Navigate to TellerConnect screen before signing in, passing the
+        // signIn function as a callback to be executed upon success or skip.
+        navigation.navigate('TellerConnect', {
+          onSuccess: async () => {
+            await signIn(user);
+          },
+        });
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -203,14 +195,11 @@ export const SignUpScreen: React.FC = () => {
                 autoComplete="email"
               />
 
-              <AuthInput
+              <PhoneNumberInput
                 label="Phone Number"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
-                placeholder="+1 XXX XXX XXXX"
-                icon="call"
-                keyboardType="phone-pad"
-                autoComplete="off"
+                placeholder="Enter your phone number"
               />
 
               <AuthInput

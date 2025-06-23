@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Platform, Modal } from 'react-native';
+import { TouchableOpacity, Platform, Modal, Text, View } from 'react-native';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { FormField } from './FormField';
 
 interface DatePickerProps {
   label: string;
@@ -11,25 +11,8 @@ interface DatePickerProps {
   onChangeText: (text: string) => void;
   placeholder: string;
   icon?: keyof typeof Ionicons.glyphMap;
+  error?: string;
 }
-
-const InputContainer = styled.View`
-  margin-bottom: 20px;
-`;
-
-const Label = styled.Text`
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 8px;
-  font-weight: 500;
-`;
-
-const InputWrapper = styled.View`
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-`;
 
 const TouchableInput = styled.TouchableOpacity`
   padding: 18px;
@@ -108,35 +91,28 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   onChangeText,
   placeholder,
   icon = 'calendar',
+  error,
 }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(value ? new Date(value) : new Date());
 
   const formatDate = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return date.toISOString().split('T')[0];
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowPicker(false);
       if (selectedDate) {
-        const formattedDate = formatDate(selectedDate);
-        onChangeText(formattedDate);
+        onChangeText(formatDate(selectedDate));
       }
-    } else {
-      // iOS: Update temp date for preview
-      if (selectedDate) {
-        setTempDate(selectedDate);
-      }
+    } else if (selectedDate) {
+      setTempDate(selectedDate);
     }
   };
 
   const handleConfirm = () => {
-    const formattedDate = formatDate(tempDate);
-    onChangeText(formattedDate);
+    onChangeText(formatDate(tempDate));
     setShowPicker(false);
   };
 
@@ -145,19 +121,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     setShowPicker(false);
   };
 
-  const openPicker = () => {
-    setShowPicker(true);
-  };
-
   return (
-    <InputContainer>
-      <Label>{label}</Label>
-      <InputWrapper>
-        <BlurView intensity={40} tint="dark" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+    <>
+      <FormField label={label} error={error}>
         <IconContainer>
           <Ionicons name={icon} size={20} color="rgba(255, 255, 255, 0.7)" />
         </IconContainer>
-        <TouchableInput onPress={openPicker}>
+        <TouchableInput onPress={() => setShowPicker(true)}>
           <InputText hasValue={!!value}>
             {value || placeholder}
           </InputText>
@@ -165,7 +135,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <Ionicons name="chevron-down" size={20} color="rgba(255, 255, 255, 0.7)" />
           </ChevronIcon>
         </TouchableInput>
-      </InputWrapper>
+      </FormField>
 
       {showPicker && (
         Platform.OS === 'ios' ? (
@@ -177,7 +147,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           >
             <ModalOverlay>
               <ModalContent>
-                <ModalTitle>Select Date of Birth</ModalTitle>
+                <ModalTitle>Select Date</ModalTitle>
                 <DateTimePicker
                   value={tempDate}
                   mode="date"
@@ -186,7 +156,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   maximumDate={new Date()}
                   minimumDate={new Date(1900, 0, 1)}
                   textColor="#ffffff"
-                  style={{ backgroundColor: 'transparent' }}
                 />
                 <ModalButtons>
                   <ModalButton variant="cancel" onPress={handleCancel}>
@@ -210,6 +179,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           />
         )
       )}
-    </InputContainer>
+    </>
   );
 }; 

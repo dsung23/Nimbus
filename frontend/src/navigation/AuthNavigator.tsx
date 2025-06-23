@@ -3,11 +3,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
+import { TellerConnectScreen } from '../screens/TellerConnectScreen';
 
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   SignUp: undefined;
+  TellerConnect: { onSuccess: () => void } | undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -23,6 +25,7 @@ export const AuthNavigator: React.FC = () => {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
+      <Stack.Screen name="TellerConnect" component={TellerConnectScreen} />
     </Stack.Navigator>
   );
 }; 
