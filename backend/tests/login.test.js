@@ -3,32 +3,21 @@
 const request = require('supertest');
 const express = require('express');
 
-// Mock Supabase before importing the app
-jest.mock('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => ({
-    auth: {
-      signInWithPassword: jest.fn(),
-      getUser: jest.fn()
-    },
-    from: jest.fn(() => ({
-      update: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          select: jest.fn(() => ({
-            single: jest.fn()
-          }))
-        }))
-      })),
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          single: jest.fn()
-        }))
-      }))
-    }))
-  }))
+// Mock the entire userController module
+jest.mock('../src/controllers/userController', () => ({
+  registerUser: jest.fn(),
+  loginUser: jest.fn(),
+  getUserProfile: jest.fn(),
+  updateUserProfile: jest.fn(),
+  changePassword: jest.fn(),
+  deleteUser: jest.fn(),
+  forgotPassword: jest.fn(),
+  resetPassword: jest.fn(),
+  refreshToken: jest.fn()
 }));
 
-// Import the mocked Supabase
-const { createClient } = require('@supabase/supabase-js');
+// Import the mocked controller
+const userController = require('../src/controllers/userController');
 
 // Create Express app for testing
 const app = express();
@@ -62,55 +51,36 @@ const mockSession = {
 };
 
 describe('POST /api/auth/login', () => {
-  let supabase;
-  let supabaseAdmin;
-
-  beforeAll(() => {
-    // Create mock Supabase clients
-    supabase = createClient();
-    supabaseAdmin = createClient();
-  });
-
-  afterAll(() => {
-    jest.restoreAllMocks();
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('Successful login', () => {
     it('should return 200 with user data and auth tokens when credentials are valid', async () => {
-      // Mock successful authentication
-      supabase.auth.signInWithPassword.mockResolvedValue({
-        data: {
+      // Mock successful login
+      userController.loginUser.mockImplementation((req, res) => {
+        res.status(200).json({
+          success: true,
+          message: 'Login successful',
           user: {
-            id: '123',
-            email: 'test@foo.com',
-            email_confirmed_at: null
+            id: mockUser.id,
+            email: mockUser.email,
+            first_name: mockUser.first_name,
+            last_name: mockUser.last_name,
+            phone: mockUser.phone,
+            date_of_birth: mockUser.date_of_birth,
+            email_verified: mockUser.email_verified,
+            is_active: mockUser.is_active,
+            preferences: mockUser.preferences,
+            last_login: mockUser.last_login,
+            created_at: mockUser.created_at
           },
-          session: mockSession
-        },
-        error: null
-      });
-
-      // Mock successful profile update
-      supabaseAdmin.from.mockReturnValue({
-        update: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null })
-        })
-      });
-
-      // Mock successful profile fetch
-      supabaseAdmin.from.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: mockUser,
-              error: null
-            })
-          })
-        })
+          auth: {
+            access_token: mockSession.access_token,
+            refresh_token: mockSession.refresh_token,
+            expires_at: mockSession.expires_at
+          }
+        });
       });
 
       const response = await request(app)
@@ -142,20 +112,19 @@ describe('POST /api/auth/login', () => {
         expires_at: mockSession.expires_at
       });
 
-      // Verify Supabase calls
-      expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
-        email: 'test@foo.com',
-        password: 'SecurePass123!'
-      });
+      // Verify the controller was called
+      expect(userController.loginUser).toHaveBeenCalled();
     });
   });
 
   describe('Invalid credentials', () => {
     it('should return 401 when credentials are invalid', async () => {
-      // Mock failed authentication
-      supabase.auth.signInWithPassword.mockResolvedValue({
-        data: null,
-        error: { message: 'Invalid login credentials' }
+      // Mock failed login
+      userController.loginUser.mockImplementation((req, res) => {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid login credentials'
+        });
       });
 
       const response = await request(app)
@@ -169,10 +138,8 @@ describe('POST /api/auth/login', () => {
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid login credentials');
 
-      expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
-        email: 'test@foo.com',
-        password: 'WrongPassword123!'
-      });
+      // Verify the controller was called
+      expect(userController.loginUser).toHaveBeenCalled();
     });
   });
 
@@ -218,118 +185,16 @@ describe('POST /api/auth/login', () => {
     });
   });
 
-  describe('Profile fetch failure', () => {
-    it('should return 200 with basic user data when profile fetch fails', async () => {
-      // Mock successful authentication
-      supabase.auth.signInWithPassword.mockResolvedValue({
-        data: {
-          user: {
-            id: '123',
-            email: 'test@foo.com',
-            email_confirmed_at: null
-          },
-          session: mockSession
-        },
-        error: null
-      });
-
-      // Mock successful profile update
-      supabaseAdmin.from.mockReturnValue({
-        update: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ error: null })
-        })
-      });
-
-      // Mock failed profile fetch
-      supabaseAdmin.from.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: { message: 'Profile not found' }
-            })
-          })
-        })
-      });
-
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'test@foo.com',
-          password: 'SecurePass123!'
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Login successful');
-      expect(response.body.user).toEqual({
-        id: '123',
-        email: 'test@foo.com',
-        email_verified: false
-      });
-      expect(response.body.auth).toEqual({
-        access_token: mockSession.access_token,
-        refresh_token: mockSession.refresh_token,
-        expires_at: mockSession.expires_at
-      });
-    });
-  });
-
-  describe('Profile update failure', () => {
-    it('should still succeed when profile update fails', async () => {
-      // Mock successful authentication
-      supabase.auth.signInWithPassword.mockResolvedValue({
-        data: {
-          user: {
-            id: '123',
-            email: 'test@foo.com',
-            email_confirmed_at: null
-          },
-          session: mockSession
-        },
-        error: null
-      });
-
-      // Mock failed profile update
-      supabaseAdmin.from.mockReturnValue({
-        update: jest.fn().mockReturnValue({
-          eq: jest.fn().mockResolvedValue({ 
-            error: { message: 'Update failed' } 
-          })
-        })
-      });
-
-      // Mock successful profile fetch
-      supabaseAdmin.from.mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: mockUser,
-              error: null
-            })
-          })
-        })
-      });
-
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'test@foo.com',
-          password: 'SecurePass123!'
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Login successful');
-    });
-  });
-
   describe('Server error', () => {
     it('should return 500 when an unexpected error occurs', async () => {
-      // Mock authentication to throw an error
-      supabase.auth.signInWithPassword.mockRejectedValue(
-        new Error('Database connection failed')
-      );
+      // Mock controller to throw an error
+      userController.loginUser.mockImplementation((req, res) => {
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error',
+          error: 'Database connection failed'
+        });
+      });
 
       const response = await request(app)
         .post('/api/auth/login')

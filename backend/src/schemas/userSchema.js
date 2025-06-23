@@ -15,11 +15,12 @@ const userSchema = {
       last_name VARCHAR(100),
       phone VARCHAR(20),
       date_of_birth DATE,
+      email_verified BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       last_login TIMESTAMP WITH TIME ZONE,
       is_active BOOLEAN DEFAULT TRUE,
-      preferences JSONB DEFAULT '{}'::jsonb
+      preferences JSONB DEFAULT '{"role": "user"}'::jsonb
     );
   `,
   

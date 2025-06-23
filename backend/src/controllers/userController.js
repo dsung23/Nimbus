@@ -366,42 +366,311 @@ module.exports = {
   },
   
   changePassword: async (req, res) => {
-    res.status(501).json({ 
-      success: false,
-      error: 'Not implemented',
-      message: 'Change password functionality is not yet implemented'
-    });
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userId = req.user.id;
+
+      // Validation is handled by middleware - data is already validated and sanitized
+
+      // First, verify the current password by attempting to sign in
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: req.user.email,
+        password: currentPassword,
+      });
+
+      if (authError) {
+        return res.status(400).json({
+          success: false,
+          message: 'Current password is incorrect'
+        });
+      }
+
+      // Update the password using Supabase Admin API
+      const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        { password: newPassword }
+      );
+
+      if (updateError) {
+        console.error('Failed to update password:', updateError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to update password',
+          error: updateError.message
+        });
+      }
+
+      // Update the updated_at timestamp in user profile
+      const { error: profileUpdateError } = await supabaseAdmin
+        .from('users')
+        .update({ 
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (profileUpdateError) {
+        console.warn('Failed to update profile timestamp after password change:', profileUpdateError);
+        // Don't fail the password change for this
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Password updated successfully'
+      });
+
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
   },
   
-  forgotPassword: async (req, res) => {
-    res.status(501).json({ 
-      success: false,
-      error: 'Not implemented',
-      message: 'Forgot password functionality is not yet implemented'
-    });
+    forgotPassword: async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      // Validation is handled by middleware - data is already validated and sanitized
+
+      // Send password reset email using Supabase Auth
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password`
+      });
+
+      if (error) {
+        // Don't reveal whether the email exists or not for security
+        console.error('Password reset error:', error);
+      }
+
+      // Always return success to prevent email enumeration attacks
+      res.status(200).json({
+        success: true,
+        message: 'If an account with that email exists, you will receive a password reset link shortly.'
+      });
+
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
   },
-  
+
   resetPassword: async (req, res) => {
-    res.status(501).json({ 
-      success: false,
-      error: 'Not implemented',
-      message: 'Reset password functionality is not yet implemented'
-    });
+    try {
+      const { token, newPassword } = req.body;
+
+      // Validation is handled by middleware - data is already validated and sanitized
+
+      // Verify the reset token and update the password
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'recovery'
+      });
+
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired reset token'
+        });
+      }
+
+      if (!data.user) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid reset token'
+        });
+      }
+
+      // Update the password using Supabase Admin API
+      const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        data.user.id,
+        { password: newPassword }
+      );
+
+      if (updateError) {
+        console.error('Failed to reset password:', updateError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to reset password',
+          error: updateError.message
+        });
+      }
+
+      // Update the updated_at timestamp in user profile
+      const { error: profileUpdateError } = await supabaseAdmin
+        .from('users')
+        .update({ 
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', data.user.id);
+
+      if (profileUpdateError) {
+        console.warn('Failed to update profile timestamp after password reset:', profileUpdateError);
+        // Don't fail the password reset for this
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Password reset successfully'
+      });
+
+    } catch (error) {
+      console.error('Reset password error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
   },
   
   deleteUser: async (req, res) => {
-    res.status(501).json({ 
-      success: false,
-      error: 'Not implemented',
-      message: 'Delete user functionality is not yet implemented'
-    });
+    try {
+      const userId = req.user.id;
+      const { password } = req.body;
+
+      // Validation is handled by middleware - data is already validated and sanitized
+
+      // Verify password before deletion for security
+      if (password) {
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: req.user.email,
+          password: password,
+        });
+
+        if (authError) {
+          return res.status(400).json({
+            success: false,
+            message: 'Password verification failed. Cannot delete account.'
+          });
+        }
+      }
+
+      // Delete user profile data first (due to foreign key constraints)
+      const { error: profileDeleteError } = await supabaseAdmin
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+      if (profileDeleteError) {
+        console.error('Failed to delete user profile:', profileDeleteError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to delete user profile',
+          error: profileDeleteError.message
+        });
+      }
+
+      // Delete the auth user (this will cascade to related data)
+      const { data, error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (authDeleteError) {
+        console.error('Failed to delete user auth:', authDeleteError);
+        // Try to restore the profile if auth deletion failed
+        // Note: This is a basic rollback - in production, use transactions
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to delete user account',
+          error: authDeleteError.message
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Account deleted successfully'
+      });
+
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
   },
   
   refreshToken: async (req, res) => {
-    res.status(501).json({ 
-      success: false,
-      error: 'Not implemented',
-      message: 'Token refresh functionality is not yet implemented'
-    });
+    try {
+      // The refresh token validation middleware (validateRefreshToken) has already
+      // validated the token and provided the refreshed session data
+      const { user, session } = req.refreshedSession;
+
+      // Update last_login in user profile
+      const { error: updateError } = await supabaseAdmin
+        .from('users')
+        .update({ 
+          last_login: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.warn('Failed to update last_login during token refresh:', updateError);
+        // Don't fail the refresh for this
+      }
+
+      // Get user profile data
+      const { data: profileData, error: profileError } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Failed to fetch user profile during refresh:', profileError);
+        // Return basic auth data without profile
+        return res.status(200).json({
+          success: true,
+          message: 'Token refreshed successfully',
+          user: {
+            id: user.id,
+            email: user.email,
+            email_verified: user.email_confirmed_at ? true : false
+          },
+          auth: {
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            expires_at: session.expires_at
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Token refreshed successfully',
+        user: {
+          id: profileData.id,
+          email: profileData.email,
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          phone: profileData.phone,
+          date_of_birth: profileData.date_of_birth,
+          email_verified: profileData.email_verified,
+          is_active: profileData.is_active,
+          preferences: profileData.preferences,
+          last_login: profileData.last_login,
+          created_at: profileData.created_at
+        },
+        auth: {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          expires_at: session.expires_at
+        }
+      });
+
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
   }
 }; 

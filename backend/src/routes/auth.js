@@ -10,7 +10,12 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { authenticateToken } = require('../middleware/auth');
+const { 
+  authenticateToken, 
+  validateRefreshToken, 
+  requireOwnership, 
+  requireActiveAccount 
+} = require('../middleware/auth');
 const { validate, sanitizeInput, validateHeaders, validateRequestSize } = require('../middleware/validation');
 const {
   registerSchema,
@@ -87,11 +92,14 @@ router.post('/reset-password',
 // Protected routes (authentication required) with validation
 router.get('/profile', 
   authenticateToken,
+  requireActiveAccount,
   userController.getUserProfile
 );
 
 router.put('/profile', 
   authenticateToken,
+  requireActiveAccount,
+  requireOwnership('profile'),
   validateRequestSize,
   validateHeaders,
   sanitizeInput,
@@ -101,6 +109,7 @@ router.put('/profile',
 
 router.put('/change-password', 
   authenticateToken,
+  requireActiveAccount,
   validateRequestSize,
   validateHeaders,
   sanitizeInput,
@@ -110,6 +119,8 @@ router.put('/change-password',
 
 router.delete('/account', 
   authenticateToken,
+  requireActiveAccount,
+  requireOwnership('profile'),
   validateRequestSize,
   validateHeaders,
   sanitizeInput,
@@ -123,6 +134,7 @@ router.post('/refresh-token',
   validateHeaders,
   sanitizeInput,
   validate(refreshTokenSchema),
+  validateRefreshToken,
   userController.refreshToken
 );
 

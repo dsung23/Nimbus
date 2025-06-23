@@ -12,6 +12,7 @@ const router = express.Router();
 
 // Import route modules
 const authRoutes = require('./auth');
+const adminRoutes = require('./admin');
 // TODO: Import additional route modules when they are created
 // const userRoutes = require('./user');
 // const accountRoutes = require('./account');
@@ -38,6 +39,7 @@ router.get('/version', (req, res) => {
 
 // Mount route modules
 router.use('/auth', authRoutes);
+router.use('/admin', adminRoutes);
 // TODO: Mount additional route modules when they are created
 // router.use('/users', userRoutes);
 // router.use('/accounts', accountRoutes);
@@ -58,7 +60,10 @@ router.use((req, res) => {
       '/auth/forgot-password',
       '/auth/reset-password',
       '/auth/profile',
-      '/auth/refresh-token'
+      '/auth/refresh-token',
+      '/admin/users',
+      '/admin/system/stats',
+      '/admin/analytics/users'
     ]
   });
 });
