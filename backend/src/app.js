@@ -6,6 +6,8 @@ require('dotenv').config();
 const app = express();
 
 // Middleware 
+const webhookRoutes = require('./routes/webhooks');
+app.use('/api/webhooks', webhookRoutes);
 app.use(cors());
 app.use(express.json());
 

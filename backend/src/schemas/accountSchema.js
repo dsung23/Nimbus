@@ -14,7 +14,9 @@ const accountSchema = {
       
       -- Account Information
       name VARCHAR(100) NOT NULL,
-      type VARCHAR(50) NOT NULL CHECK (type IN ('checking', 'savings', 'credit', 'investment', 'loan', 'other')),
+      type VARCHAR(50) NOT NULL CHECK (type IN ('depository', 'credit', 'loan', 'investment', 'other')),
+      subtype VARCHAR(50),
+      status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open', 'closed')),
       institution VARCHAR(100),
       account_number VARCHAR(50),
       routing_number VARCHAR(20),
@@ -27,8 +29,11 @@ const accountSchema = {
       -- Teller API Integration
       teller_account_id VARCHAR(255) UNIQUE,
       teller_institution_id VARCHAR(255),
+      teller_enrollment_id VARCHAR(255),
+      teller_last_four VARCHAR(4),
       last_sync TIMESTAMP WITH TIME ZONE,
       sync_status VARCHAR(20) DEFAULT 'pending' CHECK (sync_status IN ('pending', 'syncing', 'success', 'failed', 'disabled')),
+      verification_status VARCHAR(20) DEFAULT 'unverified' CHECK (verification_status IN ('unverified', 'verified', 'failed')),
       
       -- Account Status
       is_active BOOLEAN DEFAULT TRUE,
@@ -49,10 +54,12 @@ const accountSchema = {
   indexes: [
     'CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id);',
     'CREATE INDEX IF NOT EXISTS idx_accounts_teller_id ON accounts(teller_account_id);',
+    'CREATE INDEX IF NOT EXISTS idx_accounts_teller_enrollment ON accounts(teller_enrollment_id);',
     'CREATE INDEX IF NOT EXISTS idx_accounts_type ON accounts(type);',
     'CREATE INDEX IF NOT EXISTS idx_accounts_is_active ON accounts(is_active);',
     'CREATE INDEX IF NOT EXISTS idx_accounts_last_sync ON accounts(last_sync);',
-    'CREATE INDEX IF NOT EXISTS idx_accounts_institution ON accounts(institution);'
+    'CREATE INDEX IF NOT EXISTS idx_accounts_institution ON accounts(institution);',
+    'CREATE INDEX IF NOT EXISTS idx_accounts_verification_status ON accounts(verification_status);'
   ],
   
   // Row Level Security (RLS) policies for Supabase
@@ -78,7 +85,17 @@ const accountSchema = {
     type: {
       required: true,
       type: 'string',
-      enum: ['checking', 'savings', 'credit', 'investment', 'loan', 'other']
+      enum: ['depository', 'credit', 'loan', 'investment', 'other']
+    },
+    subtype: {
+      required: false,
+      type: 'string',
+      maxLength: 50
+    },
+    status: {
+      required: false,
+      type: 'string',
+      enum: ['open', 'closed']
     },
     institution: {
       required: false,
@@ -122,10 +139,25 @@ const accountSchema = {
       type: 'string',
       maxLength: 255
     },
+    teller_enrollment_id: {
+      required: false,
+      type: 'string',
+      maxLength: 255
+    },
+    teller_last_four: {
+      required: false,
+      type: 'string',
+      maxLength: 4
+    },
     sync_status: {
       required: false,
       type: 'string',
       enum: ['pending', 'syncing', 'success', 'failed', 'disabled']
+    },
+    verification_status: {
+      required: false,
+      type: 'string',
+      enum: ['unverified', 'verified', 'failed']
     },
     is_active: {
       required: false,

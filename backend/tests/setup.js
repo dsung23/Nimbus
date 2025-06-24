@@ -13,3 +13,20 @@ global.console = {
   warn: jest.fn(),
   error: jest.fn(),
 };
+
+const mockSupabase = {
+  from: jest.fn().mockReturnThis(),
+  select: jest.fn().mockReturnThis(),
+  insert: jest.fn().mockReturnThis(),
+  update: jest.fn().mockReturnThis(),
+  upsert: jest.fn().mockReturnThis(),
+  eq: jest.fn().mockReturnThis(),
+  single: jest.fn().mockReturnThis(),
+  order: jest.fn().mockReturnThis(),
+  range: jest.fn().mockReturnThis(),
+  gte: jest.fn().mockReturnThis(),
+  lte: jest.fn().mockReturnThis()
+};
+jest.mock('../src/utils/database', () => ({
+  getClient: () => mockSupabase
+}));
