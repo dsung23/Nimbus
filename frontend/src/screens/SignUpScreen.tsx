@@ -110,9 +110,10 @@ export const SignUpScreen: React.FC = () => {
         email,
         password,
         {
-          fullName: `${firstName.trim()} ${lastName.trim()}`,
-          dateOfBirth: dateOfBirth.trim(),
-          phoneNumber: phoneNumber.trim(),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone: phoneNumber.trim(),
+          date_of_birth: dateOfBirth.trim(),
         }
       );
 

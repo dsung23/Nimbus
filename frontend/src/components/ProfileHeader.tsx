@@ -6,20 +6,17 @@ interface ProfileHeaderProps {
   user: User;
 }
 
-const getInitials = (name: string) => {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('');
+const getInitials = (first: string, last: string) => {
+  return `${first?.[0] || ''}${last?.[0] || ''}`.toUpperCase();
 };
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => (
   <View style={styles.container}>
     <View style={styles.avatar}>
-      <Text style={styles.avatarText}>{getInitials(user.fullName)}</Text>
+      <Text style={styles.avatarText}>{getInitials(user.first_name, user.last_name)}</Text>
     </View>
-    <Text style={styles.name}>{user.fullName}</Text>
-    <Text style={styles.memberSince}>Member since {new Date(user.memberSince).getFullYear()}</Text>
+    <Text style={styles.name}>{user.first_name} {user.last_name}</Text>
+    <Text style={styles.memberSince}>Member since {user.memberSince ? new Date(user.memberSince).getFullYear() : ''}</Text>
   </View>
 );
 

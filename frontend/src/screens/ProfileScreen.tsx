@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import styled from 'styled-components/native';
 import { Background } from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { User } from '../types/user';
 import { ProfileHeader } from '../components/ProfileHeader';
@@ -13,16 +14,8 @@ import { InfoRow } from '../components/InfoRow';
 import { EditInfoModal } from '../components/EditInfoModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { updateUserProfile } from '../api/userService';
-import { updateUserPassword } from '../api/authService';
 
-const mockUser: User = {
-  id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-  fullName: 'John Doe',
-  email: 'john.doe@email.com',
-  phoneNumber: '+1 (555) 123-4567',
-  dateOfBirth: '1990-01-15',
-  memberSince: '2022-08-20',
-};
+const API_BASE_URL = 'http://localhost:3789';
 
 type EditingField = {
   field: 'email' | 'phoneNumber' | 'dateOfBirth';
@@ -63,11 +56,31 @@ export const ProfileScreen: React.FC = () => {
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
 
   useEffect(() => {
-    // Simulate loading user data
-    setTimeout(() => {
-      setUser(mockUser);
-      setIsLoading(false);
-    }, 1000);
+    const fetchProfile = async () => {
+      setIsLoading(true);
+      try {
+        const accessToken = await AsyncStorage.getItem('accessToken');
+        if (!accessToken) throw new Error('No access token found');
+        const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        if (response.ok && data.success && data.user) {
+          setUser(data.user);
+        } else {
+          throw new Error(data.message || 'Failed to fetch profile');
+        }
+      } catch (err: any) {
+        Alert.alert('Error', err.message || 'Failed to fetch profile');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
   }, []);
 
   const handleSaveInfo = async (newValue: string) => {
@@ -94,13 +107,8 @@ export const ProfileScreen: React.FC = () => {
     // In a real app, you might validate the currentPassword first
     console.log('Validating current password (placeholder):', currentPassword);
 
-    const { error } = await updateUserPassword(newPassword);
-
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      Alert.alert('Success', 'Your password has been changed.');
-    }
+    // TODO: Implement password update logic with backend if needed
+    Alert.alert('Info', 'Password change functionality is not implemented.');
     setIsLoading(false);
   };
 
@@ -155,17 +163,17 @@ export const ProfileScreen: React.FC = () => {
             />
             <InfoRow
               label="Phone Number"
-              value={user.phoneNumber}
+              value={user.phone}
               icon="call"
               isTappable
-              onPress={() => setEditingField({ field: 'phoneNumber', label: 'Edit Phone Number', currentValue: user.phoneNumber })}
+              onPress={() => setEditingField({ field: 'phoneNumber', label: 'Edit Phone Number', currentValue: user.phone })}
             />
             <InfoRow
               label="Date of Birth"
-              value={new Date(user.dateOfBirth).toLocaleDateString()}
+              value={new Date(user.date_of_birth).toLocaleDateString()}
               icon="calendar"
               isTappable
-              onPress={() => setEditingField({ field: 'dateOfBirth', label: 'Edit Date of Birth', currentValue: user.dateOfBirth })}
+              onPress={() => setEditingField({ field: 'dateOfBirth', label: 'Edit Date of Birth', currentValue: user.date_of_birth })}
             />
           </ProfileSection>
 

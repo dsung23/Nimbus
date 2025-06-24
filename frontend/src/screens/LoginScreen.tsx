@@ -15,11 +15,6 @@ import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { signInWithEmail } from '../api/authService';
 import { useAuth } from '../contexts/AuthContext';
 
-type LoginScreenNavigationProp = NativeStackNavigationProp<
-  AuthStackParamList,
-  'Login'
->;
-
 const Container = styled.View`
   flex: 1;
   justify-content: center;
@@ -61,6 +56,11 @@ const ForgotPasswordLink = styled.Text`
   text-decoration-line: underline;
 `;
 
+type LoginScreenNavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  'Login'
+>;
+
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { signIn } = useAuth();
@@ -85,20 +85,27 @@ export const LoginScreen: React.FC = () => {
     setError(null);
 
     try {
-      const { user, session, error: authError } = await signInWithEmail(email, password);
+      const { user, error: authError } = await signInWithEmail(email, password);
 
       if (authError) {
         setError(authError.message);
         return;
       }
 
-      if (user && session) {
-        // Sign in the user through the auth context
-        await signIn(user);
-        
-        // The AuthContext will automatically update the app state
-        // and the user will be redirected to the main app
-        console.log('User logged in successfully:', user.fullName);
+      if (user) {
+        // Map backend user to frontend User type, filling missing fields
+        const mappedUser = {
+          id: user.id || '',
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          date_of_birth: user.date_of_birth || '',
+          profileImageUrl: user.profileImageUrl || '',
+          memberSince: user.memberSince || '',
+        };
+        await signIn(mappedUser);
+        console.log('User logged in successfully:', mappedUser.email);
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');

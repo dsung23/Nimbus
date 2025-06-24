@@ -1,9 +1,10 @@
 export interface User {
   id: string;
-  fullName: string;
+  first_name: string;
+  last_name: string;
   email: string;
-  phoneNumber: string;
-  dateOfBirth: string; // YYYY-MM-DD
+  phone: string;
+  date_of_birth: string; // YYYY-MM-DD
   profileImageUrl?: string;
   memberSince: string; // YYYY-MM-DD
 } 

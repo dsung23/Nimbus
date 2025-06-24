@@ -1,42 +1,73 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types/user';
 
-// Mock user data for development
-const mockUser: User = {
-  id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-  fullName: 'John Doe',
-  email: 'john.doe@email.com',
-  phoneNumber: '+1 (555) 123-4567',
-  dateOfBirth: '1990-01-15',
-  memberSince: '2022-08-20',
+const API_URL = 'http://localhost:3789/api/auth';
+
+const storeTokens = async (accessToken: string, refreshToken?: string) => {
+  try {
+    if (typeof accessToken !== 'string' || !accessToken) {
+      console.error(
+        'Failed to save tokens: Invalid accessToken received.',
+        accessToken
+      );
+      return;
+    }
+    await AsyncStorage.setItem('accessToken', accessToken);
+    if (refreshToken) {
+      await AsyncStorage.setItem('refreshToken', refreshToken);
+    }
+  } catch (e) {
+    console.error('Failed to save tokens to storage', e);
+  }
 };
 
-// Mock session data
-const mockSession = {
-  access_token: 'mock_access_token',
-  refresh_token: 'mock_refresh_token',
-  expires_at: Date.now() + 3600000, // 1 hour from now
+export const getTokens = async () => {
+  try {
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    const refreshToken = await AsyncStorage.getItem('refreshToken');
+    return { accessToken, refreshToken };
+  } catch (e) {
+    console.error('Failed to fetch tokens from storage', e);
+    return { accessToken: null, refreshToken: null };
+  }
+};
+
+export const clearTokens = async () => {
+  try {
+    await AsyncStorage.removeItem('accessToken');
+    await AsyncStorage.removeItem('refreshToken');
+  } catch (e) {
+    console.error('Failed to clear tokens from storage', e);
+  }
 };
 
 export const signInWithEmail = async (
   email: string,
   password: string
-): Promise<{ user: User | null; session: any | null; error: { message: string } | null }> => {
-  console.log('Simulating API call to sign in with:', { email });
+): Promise<{ user: User | null; error: { message: string } | null }> => {
+  try {
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+    const data = await response.json();
+    console.log('Backend login response:', data);
 
-  // In a real app, this would be a call to Supabase Auth.
-  // e.g., const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!response.ok || !data.success) {
+      return { user: null, error: { message: data.message || 'Login failed.' } };
+    }
 
-  // Simulate a successful login for a known user
-  if (password === 'password') {
-    // On success, Supabase returns a user and session object.
-    // The `user` object should conform to the `User` interface defined in the Profile prompt.
-    return { user: mockUser, session: mockSession, error: null };
-  } else {
-    // Simulate a failed login
-    return { user: null, session: null, error: { message: 'Invalid credentials.' } };
+    await storeTokens(data.auth?.access_token, data.auth?.refresh_token);
+    // The user object from the API should conform to our User type.
+    // If not, we might need a mapping function.
+    return { user: data.user, error: null };
+  } catch (error) {
+    console.error('Sign-in error:', error);
+    return { user: null, error: { message: 'A network error occurred.' } };
   }
 };
 
@@ -44,47 +75,49 @@ export const signUpWithEmail = async (
   email: string,
   password: string,
   userData: {
-    fullName: string;
-    dateOfBirth: string;
-    phoneNumber: string;
+    first_name: string;
+    last_name: string;
+    phone: string;
+    date_of_birth: string;
   }
-): Promise<{ user: User | null; session: any | null; error: { message: string } | null }> => {
-  console.log('Simulating API call to sign up with:', { email, ...userData });
+): Promise<{ user: User | null; error: { message: string } | null }> => {
+  try {
+    const response = await fetch(`${API_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone: userData.phone,
+        date_of_birth: userData.date_of_birth,
+      }),
+    });
 
-  // In a real Supabase call, additional user data is passed in the options object.
-  // const { data, error } = await supabase.auth.signUp({
-  //   email: email,
-  //   password: password,
-  //   options: {
-  //     data: {
-  //       full_name: userData.fullName,
-  //       date_of_birth: userData.dateOfBirth,
-  //       phone_number: userData.phoneNumber,
-  //     }
-  //   }
-  // });
+    const data = await response.json();
+    console.log('Backend register response:', data);
 
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!response.ok || !data.success) {
+      return {
+        user: null,
+        error: { message: data.message || 'Registration failed.' },
+      };
+    }
 
-  // Simulate a successful sign-up
-  if (email.includes('@')) {
-    const newUser: User = {
-      id: `new-user-${Date.now()}`,
-      fullName: userData.fullName,
-      email: email,
-      phoneNumber: userData.phoneNumber,
-      dateOfBirth: userData.dateOfBirth,
-      memberSince: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
-    };
-
-    return { user: newUser, session: mockSession, error: null };
-  } else {
-    // Simulate a failure
-    return { user: null, session: null, error: { message: 'Invalid email address.' } };
+    await storeTokens(data.auth?.access_token, data.auth?.refresh_token);
+    // The user object from the API should conform to our User type.
+    return { user: data.user, error: null };
+  } catch (error) {
+    console.error('Sign-up error:', error);
+    return { user: null, error: { message: 'A network error occurred.' } };
   }
 };
 
+/*
+// This function is commented out as there is no corresponding endpoint in the API contract.
 export const updateUserPassword = async (
   newPassword: string
 ): Promise<{ error: { message: string } | null }> => {
@@ -98,4 +131,5 @@ export const updateUserPassword = async (
 
   // Simulate success
   return { error: null };
-}; 
+};
+*/ 
