@@ -237,6 +237,68 @@ const deleteAccountSchema = Joi.object({
     })
 });
 
+/**
+ * Schema for Teller account connection
+ * Validates enrollment ID and access token
+ */
+const tellerConnectSchema = Joi.object({
+  enrollment_id: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'string.min': 'Enrollment ID cannot be empty',
+      'any.required': 'Enrollment ID is required'
+    }),
+  access_token: Joi.string()
+    .min(1)
+    .required()
+    .messages({
+      'string.min': 'Access token cannot be empty',
+      'any.required': 'Access token is required'
+    }),
+  institution_id: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Institution ID must be a string'
+    }),
+  institution_name: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Institution name must be a string'
+    })
+});
+
+/**
+ * Schema for account sync operations
+ * Validates optional parameters for sync
+ */
+const syncAccountSchema = Joi.object({
+  force_sync: Joi.boolean()
+    .optional()
+    .messages({
+      'boolean.base': 'Force sync must be a boolean'
+    }),
+  sync_transactions: Joi.boolean()
+    .optional()
+    .messages({
+      'boolean.base': 'Sync transactions must be a boolean'
+    }),
+  date_range: Joi.object({
+    start_date: Joi.date()
+      .optional()
+      .messages({
+        'date.base': 'Start date must be a valid date'
+      }),
+    end_date: Joi.date()
+      .optional()
+      .min(Joi.ref('start_date'))
+      .messages({
+        'date.base': 'End date must be a valid date',
+        'date.min': 'End date must be after start date'
+      })
+  }).optional()
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
@@ -245,5 +307,7 @@ module.exports = {
   forgotPasswordSchema,
   resetPasswordSchema,
   refreshTokenSchema,
-  deleteAccountSchema
+  deleteAccountSchema,
+  tellerConnectSchema,
+  syncAccountSchema
 }; 

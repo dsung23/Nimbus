@@ -138,4 +138,23 @@ router.post('/refresh-token',
   userController.refreshToken
 );
 
+// Endpoint aliases for better API compatibility
+router.post('/signup', 
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  authLimiter,
+  validate(registerSchema),
+  userController.registerUser
+);
+
+router.post('/refresh', 
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  validate(refreshTokenSchema),
+  validateRefreshToken,
+  userController.refreshToken
+);
+
 module.exports = router; 
