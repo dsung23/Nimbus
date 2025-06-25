@@ -1,26 +1,48 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types/user';
 
-// This is a placeholder for the actual user data that would be returned from the API
-let currentUserData: User = {
-  id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-  fullName: 'John Doe',
-  email: 'john.doe@email.com',
-  phoneNumber: '+1 (555) 123-4567',
-  dateOfBirth: '1990-01-15',
-  memberSince: '2022-08-20',
-};
+// NOTE: Replace 192.168.1.XX with your computer's actual local IP address
+const API_URL = 'http://192.168.1.7:3789/api/auth';
 
 export const updateUserProfile = async (
+  userId: string,
   updates: Partial<User>
-): Promise<{ success: boolean; data: User }> => {
-  console.log('Simulating API call to update user profile with:', updates);
+): Promise<{ success: boolean; data: User; error?: string }> => {
+  try {
+    const payload = { ...updates, id: userId };
+    console.log('Updating user profile with:', payload);
 
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+    // Get the authentication token
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    if (!accessToken) {
+      throw new Error('No access token found');
+    }
 
-  // In a real app, this would be a fetch/axios call.
-  // For now, we'll merge the updates into our mock data.
-  currentUserData = { ...currentUserData, ...updates };
+    // Make the API call to update profile
+    const response = await fetch(`${API_URL}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
-  return { success: true, data: currentUserData };
+    const data = await response.json();
+    console.log('Backend profile update response:', data);
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Failed to update profile');
+    }
+
+    // Return the updated user data from the backend
+    return { success: true, data: data.user };
+  } catch (error) {
+    console.error('Profile update error:', error);
+    return { 
+      success: false, 
+      data: {} as User, 
+      error: error instanceof Error ? error.message : 'A network error occurred.' 
+    };
+  }
 }; 

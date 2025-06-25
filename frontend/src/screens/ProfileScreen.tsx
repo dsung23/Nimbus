@@ -15,10 +15,10 @@ import { EditInfoModal } from '../components/EditInfoModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { updateUserProfile } from '../api/userService';
 
-const API_BASE_URL = 'http://localhost:3789';
+const API_BASE_URL = 'http://192.168.1.7:3789';
 
 type EditingField = {
-  field: 'email' | 'phoneNumber' | 'dateOfBirth';
+  field: 'first_name' | 'last_name' | 'phone' | 'dateOfBirth';
   label: string;
   currentValue: string;
 };
@@ -84,18 +84,19 @@ export const ProfileScreen: React.FC = () => {
   }, []);
 
   const handleSaveInfo = async (newValue: string) => {
-    if (!editingField) return;
+    if (!editingField || !user) return;
 
     setIsLoading(true);
     setEditingField(null);
 
     const updates = { [editingField.field]: newValue };
-    const { success, data } = await updateUserProfile(updates);
+    const { success, data, error } = await updateUserProfile(user.id, updates);
     
     if (success) {
       setUser(data);
+      Alert.alert('Success', 'Profile updated successfully!');
     } else {
-      Alert.alert('Error', 'Failed to update profile.');
+      Alert.alert('Error', error || 'Failed to update profile.');
     }
     setIsLoading(false);
   };
@@ -155,18 +156,30 @@ export const ProfileScreen: React.FC = () => {
         <View style={{ paddingHorizontal: 16 }}>
           <ProfileSection title="Personal Information">
             <InfoRow
+              label="First Name"
+              value={user.first_name}
+              icon="person"
+              isTappable
+              onPress={() => setEditingField({ field: 'first_name', label: 'Edit First Name', currentValue: user.first_name })}
+            />
+            <InfoRow
+              label="Last Name"
+              value={user.last_name}
+              icon="person-outline"
+              isTappable
+              onPress={() => setEditingField({ field: 'last_name', label: 'Edit Last Name', currentValue: user.last_name })}
+            />
+            <InfoRow
               label="Email Address"
               value={user.email}
               icon="mail"
-              isTappable
-              onPress={() => setEditingField({ field: 'email', label: 'Edit Email Address', currentValue: user.email })}
             />
             <InfoRow
               label="Phone Number"
               value={user.phone}
               icon="call"
               isTappable
-              onPress={() => setEditingField({ field: 'phoneNumber', label: 'Edit Phone Number', currentValue: user.phone })}
+              onPress={() => setEditingField({ field: 'phone', label: 'Edit Phone Number', currentValue: user.phone })}
             />
             <InfoRow
               label="Date of Birth"

@@ -64,14 +64,14 @@ export const SignUpScreen: React.FC = () => {
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     // Check for required fields
-    if (!firstName.trim() || !lastName.trim() || !dateOfBirth.trim() || !email.trim() || !phoneNumber.trim() || !password.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !dateOfBirth.trim() || !email.trim() || !phone.trim() || !password.trim()) {
       setError('Please fill in all fields.');
       return false;
     }
@@ -89,7 +89,7 @@ export const SignUpScreen: React.FC = () => {
     }
 
     // Validate phone number (basic check for digits)
-    if (phoneNumber.length < 10) {
+    if (phone.length < 10) {
       setError('Please enter a valid phone number.');
       return false;
     }
@@ -106,13 +106,13 @@ export const SignUpScreen: React.FC = () => {
     setError(null);
 
     try {
-      const { user, session, error: signUpError } = await signUpWithEmail(
+      const { user, error: signUpError } = await signUpWithEmail(
         email,
         password,
         {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          phone: phoneNumber.trim(),
+          phone: phone.trim(),
           date_of_birth: dateOfBirth.trim(),
         }
       );
@@ -122,7 +122,7 @@ export const SignUpScreen: React.FC = () => {
         return;
       }
 
-      if (user && session) {
+      if (user) {
         // Navigate to TellerConnect screen before signing in, passing the
         // signIn function as a callback to be executed upon success or skip.
         navigation.navigate('TellerConnect', {
@@ -198,8 +198,8 @@ export const SignUpScreen: React.FC = () => {
 
               <PhoneNumberInput
                 label="Phone Number"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
+                value={phone}
+                onChangeText={setPhone}
                 placeholder="Enter your phone number"
               />
 
