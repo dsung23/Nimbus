@@ -71,7 +71,10 @@ export const ProfileScreen: React.FC = () => {
         });
         const data = await response.json();
         if (response.ok && data.success && data.user) {
-          setUser(data.user);
+          setUser({
+            ...data.user,
+            memberSince: data.user.created_at
+          });
         } else {
           throw new Error(data.message || 'Failed to fetch profile');
         }
