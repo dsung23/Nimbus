@@ -108,22 +108,12 @@ export const LoginScreen: React.FC = () => {
       const { user, error: authError } = await signInWithEmail(state.email, state.password);
 
       if (authError) {
-        setState(prevState => ({ ...prevState, error: authError.message, isLoading: false }));
+        setState(prevState => ({ ...prevState, error: "The email or password you entered is incorrect.", isLoading: false }));
         return;
       }
 
       if (user) {
-        const mappedUser = {
-          id: user.id || '',
-          first_name: user.first_name || '',
-          last_name: user.last_name || '',
-          email: user.email || '',
-          phone: user.phone || '',
-          date_of_birth: user.date_of_birth || '',
-          profileImageUrl: user.profileImageUrl || '',
-          memberSince: user.memberSince || '',
-        };
-        await signIn(mappedUser);
+        await signIn(user);
       }
     } catch (err) {
       setState(prevState => ({ ...prevState, error: 'An unexpected error occurred. Please try again.', isLoading: false }));
