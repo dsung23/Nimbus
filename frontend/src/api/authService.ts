@@ -116,6 +116,53 @@ export const signUpWithEmail = async (
   }
 };
 
+export const updateUserPassword = async (
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<{ success: boolean; error?: { message: string } }> => {
+  try {
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    if (!accessToken) {
+      return { 
+        success: false, 
+        error: { message: 'No access token found. Please log in again.' } 
+      };
+    }
+
+    const response = await fetch(`${API_URL}/change-password`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      }),
+    });
+
+    const data = await response.json();
+    console.log('Backend password update response:', data);
+
+    if (!response.ok || !data.success) {
+      return { 
+        success: false, 
+        error: { message: data.message || 'Failed to update password.' } 
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Password update error:', error);
+    return { 
+      success: false, 
+      error: { message: 'A network error occurred.' } 
+    };
+  }
+};
+
 /*
 // This function is commented out as there is no corresponding endpoint in the API contract.
 export const updateUserPassword = async (

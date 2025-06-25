@@ -14,6 +14,7 @@ import { InfoRow } from '../components/InfoRow';
 import { EditInfoModal } from '../components/EditInfoModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { updateUserProfile } from '../api/userService';
+import { updateUserPassword } from '../api/authService';
 
 const API_BASE_URL = 'http://localhost:3789';
 
@@ -104,12 +105,19 @@ export const ProfileScreen: React.FC = () => {
     setIsLoading(true);
     setIsPasswordModalVisible(false);
 
-    // In a real app, you might validate the currentPassword first
-    console.log('Validating current password (placeholder):', currentPassword);
-
-    // TODO: Implement password update logic with backend if needed
-    Alert.alert('Info', 'Password change functionality is not implemented.');
-    setIsLoading(false);
+    try {
+      const result = await updateUserPassword(currentPassword, newPassword, newPassword);
+      
+      if (result.success) {
+        Alert.alert('Success', 'Password updated successfully!');
+      } else {
+        Alert.alert('Error', result.error?.message || 'Failed to update password.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred while updating password.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogout = async () => {
