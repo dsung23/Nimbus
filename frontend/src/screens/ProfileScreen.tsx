@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { Background } from '../components/Background';
@@ -12,6 +12,12 @@ import { EditInfoModal } from '../components/EditInfoModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { PhoneEditModal } from '../components/PhoneEditModal';
 import { DateEditModal } from '../components/DateEditModal';
+
+type EditingField = {
+  field: 'first_name' | 'last_name';
+  label: string;
+  currentValue: string;
+};
 
 const Container = styled.View`
   flex: 1;
@@ -40,26 +46,69 @@ const LogoutButtonText = styled.Text`
 
 export const ProfileScreen: React.FC = () => {
   const { signOut } = useAuth();
-  const {
-    user,
-    isLoading,
-    editingField,
-    isPasswordModalVisible,
-    isEditingPhone,
-    isEditingDate,
-    tempPhone,
-    tempDate,
-    handleSaveInfo,
-    handleSavePhone,
-    handleSaveDate,
-    handlePasswordSave,
-    setEditingField,
-    setIsPasswordModalVisible,
-    setIsEditingPhone,
-    setIsEditingDate,
-    setTempPhone,
-    setTempDate,
-  } = useUserProfile();
+  const { user, isLoading, error, success, updateProfile, changePassword, clearMessages } = useUserProfile();
+  
+  // UI State
+  const [activeModal, setActiveModal] = useState<'name' | 'phone' | 'date' | 'password' | null>(null);
+  const [editingField, setEditingField] = useState<EditingField | null>(null);
+  const [tempPhone, setTempPhone] = useState('');
+  const [tempDate, setTempDate] = useState('');
+
+  // Handle error and success messages
+  useEffect(() => {
+    if (error) {
+      Alert.alert('Error', error);
+      clearMessages();
+    }
+  }, [error, clearMessages]);
+
+  useEffect(() => {
+    if (success) {
+      Alert.alert('Success', success);
+      clearMessages();
+    }
+  }, [success, clearMessages]);
+
+  // UI Handlers
+  const handleSaveInfo = async (newValue: string) => {
+    if (!editingField || !user) return;
+
+    const updates = { [editingField.field]: newValue };
+    const result = await updateProfile(updates);
+    
+    if (result.success) {
+      setActiveModal(null);
+      setEditingField(null);
+    }
+  };
+
+  const handleSavePhone = async () => {
+    if (!user) return;
+    
+    const result = await updateProfile({ phone: tempPhone });
+    
+    if (result.success) {
+      setActiveModal(null);
+    }
+  };
+
+  const handleSaveDate = async () => {
+    if (!user) return;
+    
+    const result = await updateProfile({ date_of_birth: tempDate });
+    
+    if (result.success) {
+      setActiveModal(null);
+    }
+  };
+
+  const handlePasswordSave = async (currentPassword: string, newPassword: string) => {
+    const result = await changePassword(currentPassword, newPassword);
+    
+    if (result.success) {
+      setActiveModal(null);
+    }
+  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -108,14 +157,20 @@ export const ProfileScreen: React.FC = () => {
               value={user.first_name}
               icon="person"
               isTappable
-              onPress={() => setEditingField({ field: 'first_name', label: 'Edit First Name', currentValue: user.first_name })}
+              onPress={() => {
+                setEditingField({ field: 'first_name', label: 'Edit First Name', currentValue: user.first_name });
+                setActiveModal('name');
+              }}
             />
             <InfoRow
               label="Last Name"
               value={user.last_name}
               icon="person-outline"
               isTappable
-              onPress={() => setEditingField({ field: 'last_name', label: 'Edit Last Name', currentValue: user.last_name })}
+              onPress={() => {
+                setEditingField({ field: 'last_name', label: 'Edit Last Name', currentValue: user.last_name });
+                setActiveModal('name');
+              }}
             />
             <InfoRow
               label="Email Address"
@@ -129,7 +184,7 @@ export const ProfileScreen: React.FC = () => {
               isTappable
               onPress={() => {
                 setTempPhone(user.phone);
-                setIsEditingPhone(true);
+                setActiveModal('phone');
               }}
             />
             <InfoRow
@@ -139,7 +194,7 @@ export const ProfileScreen: React.FC = () => {
               isTappable
               onPress={() => {
                 setTempDate(user.date_of_birth);
-                setIsEditingDate(true);
+                setActiveModal('date');
               }}
             />
           </ProfileSection>
@@ -149,7 +204,7 @@ export const ProfileScreen: React.FC = () => {
               label="Change Password"
               icon="lock-closed"
               isTappable
-              onPress={() => setIsPasswordModalVisible(true)}
+              onPress={() => setActiveModal('password')}
             />
           </ProfileSection>
 
@@ -159,36 +214,41 @@ export const ProfileScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {editingField && (
+      {editingField && activeModal === 'name' && (
         <EditInfoModal
-          isVisible={!!editingField}
-          onClose={() => setEditingField(null)}
+          isVisible={true}
+          onClose={() => {
+            setActiveModal(null);
+            setEditingField(null);
+          }}
           onSave={handleSaveInfo}
           label={editingField.label}
           initialValue={editingField.currentValue}
         />
       )}
 
-      <ChangePasswordModal
-        isVisible={isPasswordModalVisible}
-        onClose={() => setIsPasswordModalVisible(false)}
-        onSave={handlePasswordSave}
-      />
+      {activeModal === 'password' && (
+        <ChangePasswordModal
+          isVisible={true}
+          onClose={() => setActiveModal(null)}
+          onSave={handlePasswordSave}
+        />
+      )}
 
-      {isEditingPhone && (
+      {activeModal === 'phone' && (
         <PhoneEditModal
-          isVisible={isEditingPhone}
-          onClose={() => setIsEditingPhone(false)}
+          isVisible={true}
+          onClose={() => setActiveModal(null)}
           onSave={handleSavePhone}
           value={tempPhone}
           onChangeText={setTempPhone}
         />
       )}
 
-      {isEditingDate && (
+      {activeModal === 'date' && (
         <DateEditModal
-          isVisible={isEditingDate}
-          onClose={() => setIsEditingDate(false)}
+          isVisible={true}
+          onClose={() => setActiveModal(null)}
           onSave={handleSaveDate}
           value={tempDate}
           onChangeText={setTempDate}

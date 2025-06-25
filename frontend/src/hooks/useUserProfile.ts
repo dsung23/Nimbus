@@ -1,29 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types/user';
 import { updateUserProfile } from '../api/userService';
 import { updateUserPassword } from '../api/authService';
 import { API_ENDPOINTS } from '../config/api';
 
-type EditingField = {
-  field: 'first_name' | 'last_name';
-  label: string;
-  currentValue: string;
-};
-
 export const useUserProfile = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingField, setEditingField] = useState<EditingField | null>(null);
-  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
-  const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [isEditingDate, setIsEditingDate] = useState(false);
-  const [tempPhone, setTempPhone] = useState('');
-  const [tempDate, setTempDate] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const fetchProfile = async () => {
+  const refreshProfile = async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       const accessToken = await AsyncStorage.getItem('accessToken');
       if (!accessToken) throw new Error('No access token found');
@@ -46,111 +37,87 @@ export const useUserProfile = () => {
         throw new Error(data.message || 'Failed to fetch profile');
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to fetch profile');
+      setError(err.message || 'Failed to fetch profile');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSaveInfo = async (newValue: string) => {
-    if (!editingField || !user) return;
+  const updateProfile = async (updates: Partial<User>) => {
+    if (!user) {
+      setError('No user data available');
+      return { success: false, error: 'No user data available' };
+    }
 
     setIsLoading(true);
-    setEditingField(null);
+    setError(null);
+    setSuccess(null);
 
-    const updates = { [editingField.field]: newValue };
-    const { success, data, error } = await updateUserProfile(user.id, updates);
-    
-    if (success) {
-      setUser(data);
-      Alert.alert('Success', 'Profile updated successfully!');
-    } else {
-      Alert.alert('Error', error || 'Failed to update profile.');
+    try {
+      const { success: apiSuccess, data, error: apiError } = await updateUserProfile(user.id, updates);
+      
+      if (apiSuccess) {
+        setUser({ ...data, memberSince: user.memberSince });
+        setSuccess('Profile updated successfully');
+        return { success: true, data };
+      } else {
+        setError(apiError || 'Failed to update profile');
+        return { success: false, error: apiError || 'Failed to update profile' };
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'An unexpected error occurred';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
-  const handleSavePhone = async () => {
-    if (!user) return;
-    
+  const changePassword = async (currentPassword: string, newPassword: string) => {
     setIsLoading(true);
-    const { success, data, error } = await updateUserProfile(user.id, { phone: tempPhone });
-    
-    if (success) {
-      setUser({ ...data, memberSince: user.memberSince });
-      Alert.alert('Success', 'Phone number updated successfully!');
-    } else {
-      Alert.alert('Error', error || 'Failed to update phone number.');
-    }
-    
-    setIsEditingPhone(false);
-    setIsLoading(false);
-  };
-
-  const handleSaveDate = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    const { success, data, error } = await updateUserProfile(user.id, { date_of_birth: tempDate });
-    
-    if (success) {
-      setUser({ ...data, memberSince: user.memberSince });
-      Alert.alert('Success', 'Date of birth updated successfully!');
-    } else {
-      Alert.alert('Error', error || 'Failed to update date of birth.');
-    }
-    
-    setIsEditingDate(false);
-    setIsLoading(false);
-  };
-
-  const handlePasswordSave = async (currentPassword: string, newPassword: string) => {
-    setIsLoading(true);
-    setIsPasswordModalVisible(false);
+    setError(null);
+    setSuccess(null);
 
     try {
       const result = await updateUserPassword(currentPassword, newPassword, newPassword);
       
       if (result.success) {
-        Alert.alert('Success', 'Password updated successfully!');
+        setSuccess('Password updated successfully');
+        return { success: true };
       } else {
-        Alert.alert('Error', result.error?.message || 'Failed to update password.');
+        setError(result.error?.message || 'Failed to update password');
+        return { success: false, error: result.error?.message || 'Failed to update password' };
       }
-    } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred while updating password.');
+    } catch (err: any) {
+      const errorMessage = 'An unexpected error occurred while updating password';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
     }
   };
 
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
   // Auto-fetch profile on mount
   useEffect(() => {
-    fetchProfile();
+    refreshProfile();
   }, []);
 
   return {
-    // State
+    // Domain state
     user,
     isLoading,
-    editingField,
-    isPasswordModalVisible,
-    isEditingPhone,
-    isEditingDate,
-    tempPhone,
-    tempDate,
+    error,
+    success,
     
-    // Actions
-    handleSaveInfo,
-    handleSavePhone,
-    handleSaveDate,
-    handlePasswordSave,
-    
-    // Setters
-    setEditingField,
-    setIsPasswordModalVisible,
-    setIsEditingPhone,
-    setIsEditingDate,
-    setTempPhone,
-    setTempDate,
+    // Domain actions
+    refreshProfile,
+    updateProfile,
+    changePassword,
+    clearMessages,
   };
 }; 
