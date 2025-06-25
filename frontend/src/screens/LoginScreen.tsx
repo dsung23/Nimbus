@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -61,39 +61,58 @@ type LoginScreenNavigationProp = NativeStackNavigationProp<
   'Login'
 >;
 
+interface LoginState {
+  email: string;
+  password: string;
+  isLoading: boolean;
+  error: string | null;
+}
+
+const validateInput = (credentials: Omit<LoginState, 'isLoading' | 'error'>): string | null => {
+  const { email, password } = credentials;
+  if (!email.trim() || !password.trim()) {
+    return 'Please fill in all fields.';
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return 'Please enter a valid email address.';
+  }
+  return null;
+};
+
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { signIn } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  
+  const [state, setState] = useState<LoginState>({
+    email: '',
+    password: '',
+    isLoading: false,
+    error: null,
+  });
 
-  const handleLogin = async () => {
-    // Basic validation
-    if (!email.trim() || !password.trim()) {
-      setError('Please fill in all fields.');
+  const handleInputChange = useCallback((field: keyof LoginState) => (value: string) => {
+    setState(prevState => ({ ...prevState, [field]: value, error: null }));
+  }, []);
+
+  const handleLogin = useCallback(async () => {
+    const validationError = validateInput(state);
+    if (validationError) {
+      setState(prevState => ({ ...prevState, error: validationError }));
       return;
     }
 
-    if (!email.includes('@')) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
+    setState(prevState => ({ ...prevState, isLoading: true, error: null }));
 
     try {
-      const { user, error: authError } = await signInWithEmail(email, password);
+      const { user, error: authError } = await signInWithEmail(state.email, state.password);
 
       if (authError) {
-        setError(authError.message);
+        setState(prevState => ({ ...prevState, error: authError.message, isLoading: false }));
         return;
       }
 
       if (user) {
-        // Map backend user to frontend User type, filling missing fields
         const mappedUser = {
           id: user.id || '',
           first_name: user.first_name || '',
@@ -105,22 +124,19 @@ export const LoginScreen: React.FC = () => {
           memberSince: user.memberSince || '',
         };
         await signIn(mappedUser);
-        console.log('User logged in successfully:', mappedUser.email);
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
+      setState(prevState => ({ ...prevState, error: 'An unexpected error occurred. Please try again.', isLoading: false }));
     }
-  };
+  }, [state, signIn]);
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = useCallback(() => {
     Alert.alert(
       'Forgot Password',
       'Password reset functionality will be implemented in the next phase.',
       [{ text: 'OK' }]
     );
-  };
+  }, []);
 
   return (
     <Background>
@@ -136,16 +152,16 @@ export const LoginScreen: React.FC = () => {
             <HeaderTitle>Welcome Back</HeaderTitle>
 
             <FormContainer>
-              {error && (
+              {state.error && (
                 <ErrorContainer>
-                  <ErrorText>{error}</ErrorText>
+                  <ErrorText>{state.error}</ErrorText>
                 </ErrorContainer>
               )}
 
               <AuthInput
                 label="Email Address"
-                value={email}
-                onChangeText={setEmail}
+                value={state.email}
+                onChangeText={handleInputChange('email')}
                 placeholder="Enter your email"
                 icon="mail"
                 keyboardType="email-address"
@@ -154,8 +170,8 @@ export const LoginScreen: React.FC = () => {
 
               <AuthInput
                 label="Password"
-                value={password}
-                onChangeText={setPassword}
+                value={state.password}
+                onChangeText={handleInputChange('password')}
                 placeholder="Enter your password"
                 secureTextEntry
                 icon="lock-closed"
@@ -163,7 +179,7 @@ export const LoginScreen: React.FC = () => {
               />
 
               <AuthButton
-                title={isLoading ? 'Signing In...' : 'Log In'}
+                title={state.isLoading ? 'Signing In...' : 'Log In'}
                 variant="primary"
                 onPress={handleLogin}
               />

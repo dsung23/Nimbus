@@ -20,9 +20,10 @@ export const Background: React.FC<BackgroundProps> = ({ children }) => {
       <LinearGradient
         colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0)']}
         style={styles.overlay}
+        pointerEvents="none"
       />
       
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         {children}
       </SafeAreaView>
     </LinearGradient>

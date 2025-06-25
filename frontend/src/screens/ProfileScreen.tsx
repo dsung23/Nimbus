@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { Background } from '../components/Background';
@@ -51,26 +51,21 @@ export const ProfileScreen: React.FC = () => {
   // UI State
   const [activeModal, setActiveModal] = useState<'name' | 'phone' | 'date' | 'password' | null>(null);
   const [editingField, setEditingField] = useState<EditingField | null>(null);
-  const [tempPhone, setTempPhone] = useState('');
-  const [tempDate, setTempDate] = useState('');
+  const [tempData, setTempData] = useState({ phone: '', date: '' });
 
   // Handle error and success messages
-  useEffect(() => {
-    if (error) {
-      Alert.alert('Error', error);
-      clearMessages();
-    }
-  }, [error, clearMessages]);
-
   useEffect(() => {
     if (success) {
       Alert.alert('Success', success);
       clearMessages();
+    } else if (error) {
+      Alert.alert('Error', error);
+      clearMessages();
     }
-  }, [success, clearMessages]);
+  }, [error, success, clearMessages]);
 
   // UI Handlers
-  const handleSaveInfo = async (newValue: string) => {
+  const handleSaveInfo = useCallback(async (newValue: string) => {
     if (!editingField || !user) return;
 
     const updates = { [editingField.field]: newValue };
@@ -80,37 +75,37 @@ export const ProfileScreen: React.FC = () => {
       setActiveModal(null);
       setEditingField(null);
     }
-  };
+  }, [editingField, user, updateProfile]);
 
-  const handleSavePhone = async () => {
+  const handleSavePhone = useCallback(async () => {
     if (!user) return;
     
-    const result = await updateProfile({ phone: tempPhone });
+    const result = await updateProfile({ phone: tempData.phone });
     
     if (result.success) {
       setActiveModal(null);
     }
-  };
+  }, [user, tempData.phone, updateProfile]);
 
-  const handleSaveDate = async () => {
+  const handleSaveDate = useCallback(async () => {
     if (!user) return;
     
-    const result = await updateProfile({ date_of_birth: tempDate });
+    const result = await updateProfile({ date_of_birth: tempData.date });
     
     if (result.success) {
       setActiveModal(null);
     }
-  };
+  }, [user, tempData.date, updateProfile]);
 
-  const handlePasswordSave = async (currentPassword: string, newPassword: string) => {
+  const handlePasswordSave = useCallback(async (currentPassword: string, newPassword: string) => {
     const result = await changePassword(currentPassword, newPassword);
     
     if (result.success) {
       setActiveModal(null);
     }
-  };
+  }, [changePassword]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     Alert.alert(
       'Log Out',
       'Are you sure you want to log out?',
@@ -125,7 +120,6 @@ export const ProfileScreen: React.FC = () => {
           onPress: async () => {
             try {
               await signOut();
-              console.log('User logged out successfully');
             } catch (error) {
               Alert.alert('Error', 'Failed to log out. Please try again.');
             }
@@ -133,7 +127,48 @@ export const ProfileScreen: React.FC = () => {
         },
       ]
     );
-  };
+  }, [signOut]);
+
+  const openFirstNameModal = useCallback(() => {
+    if (!user) return;
+    setEditingField({ field: 'first_name', label: 'Edit First Name', currentValue: user.first_name });
+    setActiveModal('name');
+  }, [user]);
+
+  const openLastNameModal = useCallback(() => {
+    if (!user) return;
+    setEditingField({ field: 'last_name', label: 'Edit Last Name', currentValue: user.last_name });
+    setActiveModal('name');
+  }, [user]);
+
+  const openPhoneModal = useCallback(() => {
+    if (!user) return;
+    setTempData(prev => ({ ...prev, phone: user.phone }));
+    setActiveModal('phone');
+  }, [user]);
+
+  const openDateModal = useCallback(() => {
+    if (!user) return;
+    setTempData(prev => ({ ...prev, date: user.date_of_birth }));
+    setActiveModal('date');
+  }, [user]);
+
+  const openPasswordModal = useCallback(() => {
+    setActiveModal('password');
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setActiveModal(null);
+    setEditingField(null);
+  }, []);
+
+  const handlePhoneChange = useCallback((phone: string) => {
+    setTempData(prev => ({ ...prev, phone }));
+  }, []);
+
+  const handleDateChange = useCallback((date: string) => {
+    setTempData(prev => ({ ...prev, date }));
+  }, []);
 
   if (isLoading || !user) {
     return (
@@ -157,20 +192,14 @@ export const ProfileScreen: React.FC = () => {
               value={user.first_name}
               icon="person"
               isTappable
-              onPress={() => {
-                setEditingField({ field: 'first_name', label: 'Edit First Name', currentValue: user.first_name });
-                setActiveModal('name');
-              }}
+              onPress={openFirstNameModal}
             />
             <InfoRow
               label="Last Name"
               value={user.last_name}
               icon="person-outline"
               isTappable
-              onPress={() => {
-                setEditingField({ field: 'last_name', label: 'Edit Last Name', currentValue: user.last_name });
-                setActiveModal('name');
-              }}
+              onPress={openLastNameModal}
             />
             <InfoRow
               label="Email Address"
@@ -182,20 +211,14 @@ export const ProfileScreen: React.FC = () => {
               value={user.phone}
               icon="call"
               isTappable
-              onPress={() => {
-                setTempPhone(user.phone);
-                setActiveModal('phone');
-              }}
+              onPress={openPhoneModal}
             />
             <InfoRow
               label="Date of Birth"
               value={new Date(user.date_of_birth).toLocaleDateString()}
               icon="calendar"
               isTappable
-              onPress={() => {
-                setTempDate(user.date_of_birth);
-                setActiveModal('date');
-              }}
+              onPress={openDateModal}
             />
           </ProfileSection>
 
@@ -204,7 +227,7 @@ export const ProfileScreen: React.FC = () => {
               label="Change Password"
               icon="lock-closed"
               isTappable
-              onPress={() => setActiveModal('password')}
+              onPress={openPasswordModal}
             />
           </ProfileSection>
 
@@ -217,10 +240,7 @@ export const ProfileScreen: React.FC = () => {
       {editingField && activeModal === 'name' && (
         <EditInfoModal
           isVisible={true}
-          onClose={() => {
-            setActiveModal(null);
-            setEditingField(null);
-          }}
+          onClose={closeModal}
           onSave={handleSaveInfo}
           label={editingField.label}
           initialValue={editingField.currentValue}
@@ -230,7 +250,7 @@ export const ProfileScreen: React.FC = () => {
       {activeModal === 'password' && (
         <ChangePasswordModal
           isVisible={true}
-          onClose={() => setActiveModal(null)}
+          onClose={closeModal}
           onSave={handlePasswordSave}
         />
       )}
@@ -238,20 +258,20 @@ export const ProfileScreen: React.FC = () => {
       {activeModal === 'phone' && (
         <PhoneEditModal
           isVisible={true}
-          onClose={() => setActiveModal(null)}
+          onClose={closeModal}
           onSave={handleSavePhone}
-          value={tempPhone}
-          onChangeText={setTempPhone}
+          value={tempData.phone}
+          onChangeText={handlePhoneChange}
         />
       )}
 
       {activeModal === 'date' && (
         <DateEditModal
           isVisible={true}
-          onClose={() => setActiveModal(null)}
+          onClose={closeModal}
           onSave={handleSaveDate}
-          value={tempDate}
-          onChangeText={setTempDate}
+          value={tempData.date}
+          onChangeText={handleDateChange}
         />
       )}
     </Background>
