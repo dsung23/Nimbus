@@ -7,7 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ICONS: { [key: string]: keyof typeof Ionicons.glyphMap } = {
   Dashboard: 'grid',
+  Chatbot: 'sparkles',
   Profile: 'person',
+  
 };
 
 export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation }) => {
