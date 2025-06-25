@@ -49,7 +49,7 @@ export const WelcomeScreen: React.FC = () => {
     <Background>
       <Container>
         <TitleContainer>
-          <AppTitle>Cofund</AppTitle>
+          <AppTitle>Nimbus</AppTitle>
           <Tagline>Take control of your finances.</Tagline>
         </TitleContainer>
         <ButtonContainer>

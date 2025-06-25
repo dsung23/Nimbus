@@ -1,8 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types/user';
-
-// NOTE: Replace 192.168.1.XX with your computer's actual local IP address
-const API_URL = 'http://192.168.1.7:3789/api/auth';
+import { API_ENDPOINTS } from '../config/api';
 
 export const updateUserProfile = async (
   userId: string,
@@ -19,7 +17,7 @@ export const updateUserProfile = async (
     }
 
     // Make the API call to update profile
-    const response = await fetch(`${API_URL}/profile`, {
+    const response = await fetch(API_ENDPOINTS.AUTH.PROFILE, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

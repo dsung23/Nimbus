@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types/user';
-
-const API_URL = 'http://192.168.1.7:3789/api/auth';
+import { API_ENDPOINTS } from '../config/api';
 
 const storeTokens = async (accessToken: string, refreshToken?: string) => {
   try {
@@ -46,7 +45,7 @@ export const signInWithEmail = async (
   password: string
 ): Promise<{ user: User | null; error: { message: string } | null }> => {
   try {
-    const response = await fetch(`${API_URL}/login`, {
+    const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,7 +81,7 @@ export const signUpWithEmail = async (
   }
 ): Promise<{ user: User | null; error: { message: string } | null }> => {
   try {
-    const response = await fetch(`${API_URL}/register`, {
+    const response = await fetch(API_ENDPOINTS.AUTH.REGISTER, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -130,7 +129,7 @@ export const updateUserPassword = async (
       };
     }
 
-    const response = await fetch(`${API_URL}/change-password`, {
+    const response = await fetch(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

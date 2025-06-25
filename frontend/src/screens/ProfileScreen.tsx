@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Text, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import styled from 'styled-components/native';
 import { Background } from '../components/Background';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,13 +14,14 @@ import { ProfileSection } from '../components/ProfileSection';
 import { InfoRow } from '../components/InfoRow';
 import { EditInfoModal } from '../components/EditInfoModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
+import { DatePicker } from '../components/DatePicker';
+import { PhoneNumberInput } from '../components/PhoneNumberInput';
 import { updateUserProfile } from '../api/userService';
 import { updateUserPassword } from '../api/authService';
-
-const API_BASE_URL = 'http://192.168.1.7:3789';
+import { API_ENDPOINTS } from '../config/api';
 
 type EditingField = {
-  field: 'first_name' | 'last_name' | 'phone' | 'dateOfBirth';
+  field: 'first_name' | 'last_name';
   label: string;
   currentValue: string;
 };
@@ -55,6 +57,10 @@ export const ProfileScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [editingField, setEditingField] = useState<EditingField | null>(null);
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [isEditingDate, setIsEditingDate] = useState(false);
+  const [tempPhone, setTempPhone] = useState('');
+  const [tempDate, setTempDate] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -62,7 +68,7 @@ export const ProfileScreen: React.FC = () => {
       try {
         const accessToken = await AsyncStorage.getItem('accessToken');
         if (!accessToken) throw new Error('No access token found');
-        const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+        const response = await fetch(API_ENDPOINTS.AUTH.PROFILE, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -102,6 +108,40 @@ export const ProfileScreen: React.FC = () => {
     } else {
       Alert.alert('Error', error || 'Failed to update profile.');
     }
+    setIsLoading(false);
+  };
+
+  const handleSavePhone = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    const { success, data, error } = await updateUserProfile(user.id, { phone: tempPhone });
+    
+    if (success) {
+      setUser({ ...data, memberSince: user.memberSince });
+      Alert.alert('Success', 'Phone number updated successfully!');
+    } else {
+      Alert.alert('Error', error || 'Failed to update phone number.');
+    }
+    
+    setIsEditingPhone(false);
+    setIsLoading(false);
+  };
+
+  const handleSaveDate = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    const { success, data, error } = await updateUserProfile(user.id, { date_of_birth: tempDate });
+    
+    if (success) {
+      setUser({ ...data, memberSince: user.memberSince });
+      Alert.alert('Success', 'Date of birth updated successfully!');
+    } else {
+      Alert.alert('Error', error || 'Failed to update date of birth.');
+    }
+    
+    setIsEditingDate(false);
     setIsLoading(false);
   };
 
@@ -190,14 +230,20 @@ export const ProfileScreen: React.FC = () => {
               value={user.phone}
               icon="call"
               isTappable
-              onPress={() => setEditingField({ field: 'phone', label: 'Edit Phone Number', currentValue: user.phone })}
+              onPress={() => {
+                setTempPhone(user.phone);
+                setIsEditingPhone(true);
+              }}
             />
             <InfoRow
               label="Date of Birth"
               value={new Date(user.date_of_birth).toLocaleDateString()}
               icon="calendar"
               isTappable
-              onPress={() => setEditingField({ field: 'dateOfBirth', label: 'Edit Date of Birth', currentValue: user.date_of_birth })}
+              onPress={() => {
+                setTempDate(user.date_of_birth);
+                setIsEditingDate(true);
+              }}
             />
           </ProfileSection>
 
@@ -231,6 +277,107 @@ export const ProfileScreen: React.FC = () => {
         onClose={() => setIsPasswordModalVisible(false)}
         onSave={handlePasswordSave}
       />
+
+      {isEditingPhone && (
+        <Modal visible={true} transparent animationType="fade">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <BlurView intensity={20} tint="dark" style={{ flex: 1 }}>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ 
+                  width: '90%', 
+                  backgroundColor: 'rgba(40, 40, 40, 0.8)', 
+                  borderRadius: 24, 
+                  padding: 24,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.2)'
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold', marginBottom: 24 }}>
+                    Edit Phone Number
+                  </Text>
+                  <PhoneNumberInput
+                    label=""
+                    value={tempPhone}
+                    onChangeText={setTempPhone}
+                    placeholder="Enter phone number"
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 24 }}>
+                    <TouchableOpacity 
+                      onPress={() => setIsEditingPhone(false)}
+                      style={{ padding: 12, marginRight: 16 }}
+                    >
+                      <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 16, fontWeight: '600' }}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      onPress={handleSavePhone}
+                      style={{ padding: 12 }}
+                    >
+                      <Text style={{ color: '#4facfe', fontSize: 16, fontWeight: '600' }}>
+                        Save
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </BlurView>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
+
+      {isEditingDate && (
+        <Modal visible={true} transparent animationType="fade">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+          >
+            <BlurView intensity={20} tint="dark" style={{ flex: 1 }}>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ 
+                  width: '90%', 
+                  backgroundColor: 'rgba(40, 40, 40, 0.8)', 
+                  borderRadius: 24, 
+                  padding: 24,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.2)'
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold', marginBottom: 24 }}>
+                    Edit Date of Birth
+                  </Text>
+                  <DatePicker
+                    label=""
+                    value={tempDate}
+                    onChangeText={setTempDate}
+                    placeholder="Select date of birth"
+                    icon="calendar"
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 24 }}>
+                    <TouchableOpacity 
+                      onPress={() => setIsEditingDate(false)}
+                      style={{ padding: 12, marginRight: 16 }}
+                    >
+                      <Text style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: 16, fontWeight: '600' }}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      onPress={handleSaveDate}
+                      style={{ padding: 12 }}
+                    >
+                      <Text style={{ color: '#4facfe', fontSize: 16, fontWeight: '600' }}>
+                        Save
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </BlurView>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
     </Background>
   );
 }; 
