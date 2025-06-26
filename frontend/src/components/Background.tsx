@@ -11,7 +11,7 @@ interface BackgroundProps {
 export const Background: React.FC<BackgroundProps> = ({ children }) => {
   return (
     <LinearGradient
-      colors={['#050505', '#111111']}
+      colors={['#000000', '#000000']}
       style={styles.gradient}
     >
       <StatusBar style="light" backgroundColor="transparent" translucent />

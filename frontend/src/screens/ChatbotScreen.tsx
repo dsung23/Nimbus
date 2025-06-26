@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Animated } from 'react-native';
 import styled from 'styled-components/native';
-import { Ionicons } from '@expo/vector-icons';
 import { Background } from '../components/Background';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Message {
   id: string;
@@ -17,34 +17,37 @@ const Container = styled.View`
 `;
 
 const Header = styled.View`
-  padding: 20px 16px 16px 16px;
+  padding: 16px;
   align-items: center;
   flex-direction: row;
   justify-content: center;
+  border-bottom-width: 1px;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
 `;
 
 const HeaderTitle = styled.Text`
   color: #ffffff;
-  font-size: 20px;
-  font-weight: bold;
-  margin-left: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  margin-left: 0;
 `;
 
 const MessagesContainer = styled(ScrollView)`
   flex: 1;
   padding: 0 16px;
+  
 `;
 
 const MessageWrapper = styled.View<{ isFromUser: boolean }>`
   flex-direction: row;
   justify-content: ${props => props.isFromUser ? 'flex-end' : 'flex-start'};
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   padding-horizontal: 4px;
 `;
 
 const MessageBubble = styled.View<{ isFromUser: boolean; isError?: boolean }>`
-  max-width: 80%;
-  padding: 16px;
+  max-width: 75%;
+  padding: 12px 16px;
   border-radius: 20px;
   ${props => {
     if (props.isError) {
@@ -54,17 +57,18 @@ const MessageBubble = styled.View<{ isFromUser: boolean; isError?: boolean }>`
         border: 1px solid rgba(220, 53, 69, 0.3);
       `;
     }
-    return props.isFromUser ? `
-    border-top-right-radius: 6px;
-    background-color: rgba(75, 192, 192, 0.15);
-    border: 1px solid rgba(75, 192, 192, 0.3);
-  ` : `
-    border-top-left-radius: 6px;
-    background-color: rgba(138, 43, 226, 0.15);
-    border: 1px solid rgba(138, 43, 226, 0.3);
+    if (!props.isFromUser) {
+      // AI message: no background, no border, but keep padding/margin
+      return '';
+    }
+    // User message: keep bubble style
+    return `
+      border-top-right-radius: 6px;
+      background-color: rgba(128, 128, 128, 0.15);
+      border: 1px solid rgba(128, 128, 128, 0.3);
+      backdrop-filter: blur(10px);
     `;
   }}
-  backdrop-filter: blur(10px);
 `;
 
 const MessageText = styled.Text`
@@ -73,19 +77,12 @@ const MessageText = styled.Text`
   line-height: 22px;
 `;
 
-const MessageTime = styled.Text<{ isFromUser: boolean }>`
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 12px;
-  margin-top: 6px;
-  ${props => props.isFromUser ? 'text-align: right;' : 'text-align: left;'}
-`;
-
 const InputContainer = styled.View`
-  padding: 16px;
-  padding-bottom: 140px; /* Increased to lift above tab bar */
+  padding: 12px 16px;
+  padding-bottom: 110px;
   flex-direction: row;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   background-color: rgba(5, 5, 5, 0.95);
   border-top-width: 1px;
   border-top-color: rgba(255, 255, 255, 0.1);
@@ -95,43 +92,127 @@ const InputWrapper = styled.View`
   flex: 1;
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 24px;
-  padding: 12px 16px;
+  border-radius: 20px;
+  padding: 10px 14px;
   backdrop-filter: blur(10px);
+  min-height: 44px;
+  justify-content: center;
 `;
 
 const StyledTextInput = styled.TextInput`
   color: #ffffff;
   font-size: 16px;
-  max-height: 100px;
+  max-height: 80px;
   min-height: 20px;
+  padding: 0;
 `;
 
 const SendButton = styled(TouchableOpacity)<{ disabled: boolean }>`
-  width: 48px;
-  height: 48px;
-  border-radius: 24px;
-  background-color: ${props => props.disabled ? 'rgba(75, 192, 192, 0.3)' : 'rgba(75, 192, 192, 0.8)'};
-  border: 1px solid rgba(75, 192, 192, 0.3);
+  padding: 8px;
   justify-content: center;
   align-items: center;
-  backdrop-filter: blur(10px);
+  background-color: transparent;
+  border-width: 0;
+`;
+
+const TypingIndicator = styled.View`
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  padding-left: 8px;
+`;
+
+const TypingDots = styled.View`
+  flex-direction: row;
+  gap: 4px;
+`;
+
+const TypingDot = styled(Animated.View)`
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.6);
+`;
+
+const AnimatedMessageWrapper = styled(Animated.View)<{ isFromUser: boolean }>`
+  flex-direction: row;
+  justify-content: ${props => props.isFromUser ? 'flex-end' : 'flex-start'};
+  margin-bottom: 12px;
+  padding-horizontal: 4px;
 `;
 
 const MessageComponent: React.FC<{ message: Message }> = ({ message }) => {
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   return (
-    <MessageWrapper isFromUser={message.isFromUser}>
+    <AnimatedMessageWrapper 
+      isFromUser={message.isFromUser}
+      style={{
+        transform: [{ translateY: slideAnim }],
+        opacity: opacityAnim,
+      }}
+    >
       <MessageBubble isFromUser={message.isFromUser} isError={message.isError}>
         <MessageText>{message.text}</MessageText>
-        <MessageTime isFromUser={message.isFromUser}>
-          {formatTime(message.timestamp)}
-        </MessageTime>
       </MessageBubble>
-    </MessageWrapper>
+    </AnimatedMessageWrapper>
+  );
+};
+
+const TypingIndicatorComponent: React.FC = () => {
+  const dot1Anim = useRef(new Animated.Value(0)).current;
+  const dot2Anim = useRef(new Animated.Value(0)).current;
+  const dot3Anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animate = () => {
+      Animated.loop(
+        Animated.stagger(150, [
+          Animated.sequence([
+            Animated.timing(dot1Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
+            Animated.timing(dot1Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(dot2Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
+            Animated.timing(dot2Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(dot3Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
+            Animated.timing(dot3Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
+          ]),
+        ])
+      ).start();
+    };
+    animate();
+  }, []);
+
+  return (
+    <TypingIndicator>
+      <MessageBubble isFromUser={false}>
+        <TypingDots>
+          <TypingDot style={{ transform: [{ translateY: dot1Anim }] }} />
+          <TypingDot style={{ transform: [{ translateY: dot2Anim }] }} />
+          <TypingDot style={{ transform: [{ translateY: dot3Anim }] }} />
+        </TypingDots>
+      </MessageBubble>
+    </TypingIndicator>
   );
 };
 
@@ -229,29 +310,22 @@ export const ChatbotScreen: React.FC = () => {
         <KeyboardAvoidingView 
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? -60 : -60}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <Header>
-            <Ionicons name="sparkles" size={24} color="#ffffff" />
-            <HeaderTitle>Ask our AI anything</HeaderTitle>
+            <HeaderTitle>Nimbus AI</HeaderTitle>
           </Header>
 
           <MessagesContainer
             ref={scrollViewRef}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingVertical: 16, paddingBottom: 20 }}
-            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingVertical: 16, paddingBottom: 20 }}
+            keyboardShouldPersistTaps="always"
           >
             {messages.map((message) => (
               <MessageComponent key={message.id} message={message} />
             ))}
-            {isLoading && (
-              <MessageWrapper isFromUser={false}>
-                <MessageBubble isFromUser={false}>
-                  <MessageText>...</MessageText>
-                </MessageBubble>
-              </MessageWrapper>
-            )}
+            {isLoading && <TypingIndicatorComponent />}
           </MessagesContainer>
 
           <InputContainer>
@@ -259,10 +333,11 @@ export const ChatbotScreen: React.FC = () => {
               <StyledTextInput
                 value={inputText}
                 onChangeText={setInputText}
-                placeholder="Type your financial question..."
+                placeholder="Ask me anything..."
                 placeholderTextColor="rgba(255, 255, 255, 0.5)"
                 multiline
                 textAlignVertical="top"
+                editable={true}
               />
             </InputWrapper>
             <SendButton 
@@ -271,8 +346,8 @@ export const ChatbotScreen: React.FC = () => {
             >
               <Ionicons 
                 name="send" 
-                size={20} 
-                color={!inputText.trim() || isLoading ? "rgba(255, 255, 255, 0.5)" : "#ffffff"} 
+                size={16} 
+                color={!inputText.trim() || isLoading ? "rgba(255, 255, 255, 0.3)" : "#ffffff"} 
               />
             </SendButton>
           </InputContainer>

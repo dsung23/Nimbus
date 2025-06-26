@@ -14,9 +14,10 @@ const ICONS: { [key: string]: keyof typeof Ionicons.glyphMap } = {
 
 export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation }) => {
   return (
-    <BlurView intensity={80} tint="dark" style={styles.blurView}>
+    <BlurView intensity={180} tint="dark" style={styles.blurView}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
         <View style={styles.tabBar}>
+          <View style={styles.glassOverlay} pointerEvents="none" />
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key];
             const label = options.tabBarLabel?.toString() ?? options.title ?? route.name;
@@ -50,7 +51,7 @@ export const GlassmorphicTabBar: React.FC<BottomTabBarProps> = ({ state, descrip
                 onLongPress={onLongPress}
                 style={styles.tabItem}
               >
-                <Ionicons name={iconName} size={24} color={color} />
+                <Ionicons name={iconName} size={20} color={color} />
                 <Text style={[styles.label, { color }]}>{label}</Text>
               </TouchableOpacity>
             );
@@ -68,25 +69,35 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderTopColor: 'rgba(255, 255, 255, 0.18)',
   },
   safeArea: {
     backgroundColor: 'transparent',
   },
   tabBar: {
     flexDirection: 'row',
-    height: 90,
-    backgroundColor: 'rgba(50, 50, 50, 0.4)',
+    height: 60,
+    backgroundColor: 'rgba(30, 30, 30, 0.18)',
     alignItems: 'center',
     justifyContent: 'space-around',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  glassOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    zIndex: 0,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   label: {
-    fontSize: 10,
-    marginTop: 4,
+    fontSize: 9,
+    marginTop: 2,
   },
 }); 
