@@ -1,9 +1,8 @@
-import React, { useRef } from 'react';
-import { ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, TextInput, Animated, View } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, TextInput, Animated, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import styled from 'styled-components/native';
 import { Background } from '../components/Background';
 import { MessageComponent } from '../components/MessageComponent';
-import { LoadingAnimation } from '../components/LoadingAnimation';
 import { useChat } from '../hooks/useChat';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -33,9 +32,9 @@ const MessagesContainer = styled(ScrollView)`
   
 `;
 
-const InputContainer = styled.View`
+const InputContainer = styled.View<{ isKeyboardVisible: boolean }>`
   padding: 12px 16px;
-  padding-bottom: 110px;
+  padding-bottom: ${props => props.isKeyboardVisible ? '80px' : '120px'};
   flex-direction: row;
   align-items: center;
   gap: 8px;
@@ -61,6 +60,7 @@ const StyledTextInput = styled(TextInput)`
   max-height: 80px;
   min-height: 20px;
   padding: 0;
+  keyboardAppearance: dark;
 `;
 
 const SendButton = styled(TouchableOpacity)<{ disabled: boolean }>`
@@ -146,61 +146,79 @@ const FloatingTypingIndicator: React.FC = () => {
 export const ChatbotScreen: React.FC = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const { messages, inputText, setInputText, isLoading, sendMessage } = useChat(scrollViewRef);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', () => {
+      setIsKeyboardVisible(true);
+    });
+    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardWillShowListener?.remove();
+      keyboardWillHideListener?.remove();
+    };
+  }, []);
 
   return (
     <Background>
       <Container>
-        <KeyboardAvoidingView 
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        >
-          <Header>
-            <HeaderTitle>Nimbus AI</HeaderTitle>
-          </Header>
-
-          <MessagesContainer
-            ref={scrollViewRef}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingVertical: 16, paddingBottom: 20 }}
-            keyboardShouldPersistTaps="always"
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView 
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
           >
-            {messages.map((message) => (
-              <MessageComponent key={message.id} message={message} />
-            ))}
-            {isLoading && (
-              <MessageComponent 
-                message={{ id: 'loading', isFromUser: false, text: '', timestamp: new Date() }} 
-              />
-            )}
-          </MessagesContainer>
+            <Header>
+              <HeaderTitle>Nimbus AI</HeaderTitle>
+            </Header>
 
-          {isLoading && <FloatingTypingIndicator />}
-
-          <InputContainer>
-            <InputWrapper>
-              <StyledTextInput
-                value={inputText}
-                onChangeText={setInputText}
-                placeholder="Ask me anything..."
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                multiline
-                textAlignVertical="top"
-                editable={true}
-              />
-            </InputWrapper>
-            <SendButton 
-              disabled={!inputText.trim() || isLoading}
-              onPress={sendMessage}
+            <MessagesContainer
+              ref={scrollViewRef}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingVertical: 16, paddingBottom: 20 }}
+              keyboardShouldPersistTaps="handled"
             >
-              <Ionicons 
-                name="send" 
-                size={16} 
-                color={!inputText.trim() || isLoading ? "rgba(255, 255, 255, 0.3)" : "#ffffff"} 
-              />
-            </SendButton>
-          </InputContainer>
-        </KeyboardAvoidingView>
+              {messages.map((message) => (
+                <MessageComponent key={message.id} message={message} />
+              ))}
+              {isLoading && (
+                <MessageComponent 
+                  message={{ id: 'loading', isFromUser: false, text: '', timestamp: new Date() }} 
+                />
+              )}
+            </MessagesContainer>
+
+            {isLoading && <FloatingTypingIndicator />}
+
+            <InputContainer isKeyboardVisible={isKeyboardVisible}>
+              <InputWrapper>
+                <StyledTextInput
+                  value={inputText}
+                  onChangeText={setInputText}
+                  placeholder="Ask me anything..."
+                  placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                  multiline
+                  textAlignVertical="top"
+                  editable={true}
+                  keyboardAppearance="dark"
+                />
+              </InputWrapper>
+              <SendButton 
+                disabled={!inputText.trim() || isLoading}
+                onPress={sendMessage}
+              >
+                <Ionicons 
+                  name="send" 
+                  size={16} 
+                  color={!inputText.trim() || isLoading ? "rgba(255, 255, 255, 0.3)" : "#ffffff"} 
+                />
+              </SendButton>
+            </InputContainer>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </Container>
     </Background>
   );
