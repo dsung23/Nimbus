@@ -1,16 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, TouchableOpacity, Animated } from 'react-native';
+import React, { useRef } from 'react';
+import { ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, TextInput, Animated, View } from 'react-native';
 import styled from 'styled-components/native';
 import { Background } from '../components/Background';
+import { MessageComponent } from '../components/MessageComponent';
+import { LoadingAnimation } from '../components/LoadingAnimation';
+import { useChat } from '../hooks/useChat';
 import { Ionicons } from '@expo/vector-icons';
-
-interface Message {
-  id: string;
-  text: string;
-  isFromUser: boolean;
-  timestamp: Date;
-  isError?: boolean;
-}
 
 const Container = styled.View`
   flex: 1;
@@ -38,45 +33,6 @@ const MessagesContainer = styled(ScrollView)`
   
 `;
 
-const MessageWrapper = styled.View<{ isFromUser: boolean }>`
-  flex-direction: row;
-  justify-content: ${props => props.isFromUser ? 'flex-end' : 'flex-start'};
-  margin-bottom: 12px;
-  padding-horizontal: 4px;
-`;
-
-const MessageBubble = styled.View<{ isFromUser: boolean; isError?: boolean }>`
-  max-width: 75%;
-  padding: 12px 16px;
-  border-radius: 20px;
-  ${props => {
-    if (props.isError) {
-      return `
-        border-top-left-radius: 6px;
-        background-color: rgba(220, 53, 69, 0.15);
-        border: 1px solid rgba(220, 53, 69, 0.3);
-      `;
-    }
-    if (!props.isFromUser) {
-      // AI message: no background, no border, but keep padding/margin
-      return '';
-    }
-    // User message: keep bubble style
-    return `
-      border-top-right-radius: 6px;
-      background-color: rgba(128, 128, 128, 0.15);
-      border: 1px solid rgba(128, 128, 128, 0.3);
-      backdrop-filter: blur(10px);
-    `;
-  }}
-`;
-
-const MessageText = styled.Text`
-  color: #ffffff;
-  font-size: 16px;
-  line-height: 22px;
-`;
-
 const InputContainer = styled.View`
   padding: 12px 16px;
   padding-bottom: 110px;
@@ -99,7 +55,7 @@ const InputWrapper = styled.View`
   justify-content: center;
 `;
 
-const StyledTextInput = styled.TextInput`
+const StyledTextInput = styled(TextInput)`
   color: #ffffff;
   font-size: 16px;
   max-height: 80px;
@@ -142,46 +98,19 @@ const AnimatedMessageWrapper = styled(Animated.View)<{ isFromUser: boolean }>`
   padding-horizontal: 4px;
 `;
 
-const MessageComponent: React.FC<{ message: Message }> = ({ message }) => {
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+const FloatingTypingIndicatorContainer = styled.View`
+  padding-left: 24px;
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  z-index: 10;
+`;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
-  return (
-    <AnimatedMessageWrapper 
-      isFromUser={message.isFromUser}
-      style={{
-        transform: [{ translateY: slideAnim }],
-        opacity: opacityAnim,
-      }}
-    >
-      <MessageBubble isFromUser={message.isFromUser} isError={message.isError}>
-        <MessageText>{message.text}</MessageText>
-      </MessageBubble>
-    </AnimatedMessageWrapper>
-  );
-};
-
-const TypingIndicatorComponent: React.FC = () => {
+const FloatingTypingIndicator: React.FC = () => {
   const dot1Anim = useRef(new Animated.Value(0)).current;
   const dot2Anim = useRef(new Animated.Value(0)).current;
   const dot3Anim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
+  React.useEffect(() => {
     const animate = () => {
       Animated.loop(
         Animated.stagger(150, [
@@ -204,105 +133,19 @@ const TypingIndicatorComponent: React.FC = () => {
   }, []);
 
   return (
-    <TypingIndicator>
-      <MessageBubble isFromUser={false}>
-        <TypingDots>
-          <TypingDot style={{ transform: [{ translateY: dot1Anim }] }} />
-          <TypingDot style={{ transform: [{ translateY: dot2Anim }] }} />
-          <TypingDot style={{ transform: [{ translateY: dot3Anim }] }} />
-        </TypingDots>
-      </MessageBubble>
-    </TypingIndicator>
+    <FloatingTypingIndicatorContainer>
+      <TypingDots>
+        <TypingDot style={{ transform: [{ translateY: dot1Anim }] }} />
+        <TypingDot style={{ transform: [{ translateY: dot2Anim }] }} />
+        <TypingDot style={{ transform: [{ translateY: dot3Anim }] }} />
+      </TypingDots>
+    </FloatingTypingIndicatorContainer>
   );
 };
 
 export const ChatbotScreen: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "Hello! I'm Nimbus, your AI financial assistant. I can help you with budgeting questions, investment insights, financial planning advice, and understanding your spending patterns. How can I assist you with your finances today?",
-      isFromUser: false,
-      timestamp: new Date(),
-    }
-  ]);
-  const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-
-  const mockAIResponses = [
-    "That's a great question! Based on current financial trends, I'd recommend...",
-    "Let me help you with that financial planning question...",
-    "From a budgeting perspective, here's what I suggest...",
-    "That's an interesting investment query. Here's my analysis...",
-    "I understand your concern about spending patterns. Let me explain..."
-  ];
-
-  const generateMockResponse = (): string => {
-    return mockAIResponses[Math.floor(Math.random() * mockAIResponses.length)];
-  };
-
-  const simulateAPICall = (): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Simulate 10% chance of error
-        if (Math.random() < 0.1) {
-          reject(new Error('Failed to connect to AI service. Please try again.'));
-        } else {
-          resolve(generateMockResponse());
-        }
-      }, 1000 + Math.random() * 2000); // 1-3 second delay
-    });
-  };
-
-  const handleSend = async () => {
-    if (!inputText.trim() || isLoading) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText.trim(),
-      isFromUser: true,
-      timestamp: new Date(),
-    };
-
-    // Add user message immediately
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    setIsLoading(true);
-
-    // Scroll to bottom
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-
-    try {
-      const aiResponse = await simulateAPICall();
-      
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: aiResponse,
-        isFromUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-    } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: error instanceof Error ? error.message : 'An unexpected error occurred.',
-        isFromUser: false,
-        timestamp: new Date(),
-        isError: true,
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-      // Scroll to bottom after response
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  };
+  const { messages, inputText, setInputText, isLoading, sendMessage } = useChat(scrollViewRef);
 
   return (
     <Background>
@@ -325,8 +168,14 @@ export const ChatbotScreen: React.FC = () => {
             {messages.map((message) => (
               <MessageComponent key={message.id} message={message} />
             ))}
-            {isLoading && <TypingIndicatorComponent />}
+            {isLoading && (
+              <MessageComponent 
+                message={{ id: 'loading', isFromUser: false, text: '', timestamp: new Date() }} 
+              />
+            )}
           </MessagesContainer>
+
+          {isLoading && <FloatingTypingIndicator />}
 
           <InputContainer>
             <InputWrapper>
@@ -342,7 +191,7 @@ export const ChatbotScreen: React.FC = () => {
             </InputWrapper>
             <SendButton 
               disabled={!inputText.trim() || isLoading}
-              onPress={handleSend}
+              onPress={sendMessage}
             >
               <Ionicons 
                 name="send" 

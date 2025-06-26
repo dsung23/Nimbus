@@ -61,9 +61,21 @@ export const signInWithEmail = async (
     }
 
     await storeTokens(data.auth?.access_token, data.auth?.refresh_token);
-    // The user object from the API should conform to our User type.
-    // If not, we might need a mapping function.
-    return { user: data.user, error: null };
+
+    // Map the raw user object from the API to our User type
+    const rawUser = data.user;
+    const mappedUser: User = {
+      id: rawUser?.id || '',
+      first_name: rawUser?.first_name || '',
+      last_name: rawUser?.last_name || '',
+      email: rawUser?.email || '',
+      phone: rawUser?.phone || '',
+      date_of_birth: rawUser?.date_of_birth || '',
+      profileImageUrl: rawUser?.profileImageUrl || '',
+      memberSince: rawUser?.memberSince || '',
+    };
+
+    return { user: mappedUser, error: null };
   } catch (error) {
     console.error('Sign-in error:', error);
     return { user: null, error: { message: 'A network error occurred.' } };
