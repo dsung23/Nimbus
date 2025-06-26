@@ -297,13 +297,7 @@ module.exports = {
           success: true,
           message: 'Token refreshed successfully',
           user: {
-<<<<<<< HEAD
-            id: user.id,
-            email: user.email,
-            email_verified: user.email_confirmed_at ? true : false
-=======
             id: user.id
->>>>>>> main
           },
           auth: {
             access_token: session.access_token,
