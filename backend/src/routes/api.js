@@ -69,6 +69,10 @@ router.use('/accounts', accountRoutes);
 // router.use('/chat', chatRoutes);
 // router.use('/analytics', analyticsRoutes);
 
+// Mount existing route modules
+router.use('/llm', llmRoutes);
+router.use('/chat', persistentChatRoutes);
+
 // 404 handler for undefined routes
 router.use((req, res) => {
   res.status(404).json({
@@ -101,9 +105,7 @@ router.use((req, res) => {
   });
 });
 
-// Mount existing route modules
-router.use('/llm', llmRoutes);
-router.use('/chat', persistentChatRoutes);
+
 
 // Mount route modules
 router.use('/auth', authRoutes);

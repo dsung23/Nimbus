@@ -22,6 +22,7 @@ module.exports = {
 
   // LLM API Configuration (Choose one based on your preference)
   // OpenAI Configuration
+  GROQ_API_KEY: process.env.GROQ_API_KEY || 'your_groq_api_key',
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'your_openai_api_key',
   OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4', // or gpt-3.5-turbo
 

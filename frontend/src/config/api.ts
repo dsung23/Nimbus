@@ -2,6 +2,7 @@ export const API_CONFIG = {
   //localhost:3789
   BASE_URL: 'http://192.168.1.7:3789',
   AUTH_ENDPOINT: '/api/auth',
+  CHAT_ENDPOINT: '/api/chat',
 } as const;
 
 export const API_ENDPOINTS = {
@@ -10,5 +11,8 @@ export const API_ENDPOINTS = {
     REGISTER: `${API_CONFIG.BASE_URL}${API_CONFIG.AUTH_ENDPOINT}/register`,
     PROFILE: `${API_CONFIG.BASE_URL}${API_CONFIG.AUTH_ENDPOINT}/profile`,
     CHANGE_PASSWORD: `${API_CONFIG.BASE_URL}${API_CONFIG.AUTH_ENDPOINT}/change-password`,
+  },
+  CHAT: {
+    SESSIONS: `${API_CONFIG.BASE_URL}${API_CONFIG.CHAT_ENDPOINT}/sessions`,
   },
 } as const; 
