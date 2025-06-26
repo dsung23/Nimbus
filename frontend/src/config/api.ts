@@ -1,4 +1,5 @@
 export const API_CONFIG = {
+  //localhost:3789
   BASE_URL: 'http://192.168.1.7',
   AUTH_ENDPOINT: '/api/auth',
 } as const;
