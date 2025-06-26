@@ -181,4 +181,94 @@ module.exports = {
   sanitizeInput,
   validateHeaders,
   validateRequestSize
+};
+
+// Validation Schemas
+const registrationSchema = Joi.object({
+  email: Joi.string()
+    .email({ tlds: { allow: false } })
+    .required()
+    .messages({
+      'string.empty': 'Email is required',
+      'string.email': 'Please enter a valid email address'
+    }),
+  password: Joi.string()
+    .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .required()
+    .messages({
+      'string.empty': 'Password is required',
+      'string.min': 'Password must be at least 8 characters long',
+      'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    }),
+  first_name: Joi.string()
+    .min(2)
+    .max(50)
+    .pattern(/^[a-zA-Z\s'-]+$/)
+    .required()
+    .messages({
+      'string.empty': 'First name is required',
+      'string.min': 'First name must be at least 2 characters long',
+      'string.max': 'First name cannot exceed 50 characters',
+      'string.pattern.base': 'First name can only contain letters, spaces, hyphens, and apostrophes'
+    }),
+  last_name: Joi.string()
+    .min(2)
+    .max(50)
+    .pattern(/^[a-zA-Z\s'-]+$/)
+    .required()
+    .messages({
+      'string.empty': 'Last name is required',
+      'string.min': 'Last name must be at least 2 characters long',
+      'string.max': 'Last name cannot exceed 50 characters',
+      'string.pattern.base': 'Last name can only contain letters, spaces, hyphens, and apostrophes'
+    }),
+  phone: Joi.string()
+    .pattern(/^\+?[\d\s\-\(\)]+$/)
+    .min(10)
+    .max(20)
+    .required()
+    .messages({
+      'string.empty': 'Phone number is required',
+      'string.min': 'Phone number must be at least 10 digits',
+      'string.max': 'Phone number cannot exceed 20 characters',
+      'string.pattern.base': 'Please enter a valid phone number'
+    }),
+  date_of_birth: Joi.date()
+    .iso()
+    .max('now')
+    .required()
+    .messages({
+      'date.base': 'Please enter a valid date of birth',
+      'date.max': 'Date of birth cannot be in the future',
+      'any.required': 'Date of birth is required'
+    })
+});
+
+const loginSchema = Joi.object({
+  email: Joi.string()
+    .email({ tlds: { allow: false } })
+    .required()
+    .messages({
+      'string.empty': 'Email is required',
+      'string.email': 'Please enter a valid email address'
+    }),
+  password: Joi.string()
+    .required()
+    .messages({
+      'string.empty': 'Password is required'
+    })
+});
+
+// Export validation schemas
+module.exports = {
+  validate,
+  handleValidationErrors,
+  validateEmail,
+  validatePassword,
+  sanitizeInput,
+  validateHeaders,
+  validateRequestSize,
+  registrationSchema,
+  loginSchema
 }; 

@@ -15,7 +15,7 @@ const llmRoutes = require('./llmRoutes');
 const persistentChatRoutes = require('./persistentChatRoutes');
 
 // Import route modules
-const authRoutes = require('./auth');
+const authRoutes = require('./authRoutes');
 const adminRoutes = require('./admin');
 const tellerRoutes = require('./teller');
 const accountRoutes = require('./accounts');
