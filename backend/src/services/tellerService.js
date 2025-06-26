@@ -16,6 +16,30 @@ class TellerService {
     this.privateKeyPath = path.join(__dirname, '../../teller/private_key.pem');
     
     this.axiosInstance = this.createAxiosInstance();
+    
+    // Cache configuration with TTL durations
+    this.cache = new Map();
+    this.cacheTTL = {
+      accounts: 30 * 60 * 1000,      // 30 minutes
+      transactions: 15 * 60 * 1000,   // 15 minutes  
+      balances: 5 * 60 * 1000,       // 5 minutes
+      account_details: 60 * 60 * 1000 // 1 hour
+    };
+    
+    // Request deduplication to prevent duplicate API calls
+    this.pendingRequests = new Map();
+    
+    // Rate limiting configuration
+    this.rateLimits = new Map(); // userId -> { requests: [], limit: number }
+    this.globalRateLimit = {
+      requests: [],
+      maxRequestsPerMinute: 100, // Global limit across all users
+      maxConcurrentRequests: 10
+    };
+    this.userRateLimit = {
+      maxRequestsPerMinute: 30, // Per user limit
+      maxConcurrentRequests: 3
+    };
   }
 
   createAxiosInstance() {
@@ -40,54 +64,265 @@ class TellerService {
     return axios.create(config);
   }
 
+  // Cache helper methods
+  getCacheKey(type, ...params) {
+    return `${type}:${params.join(':')}`;
+  }
+
+  getCachedData(cacheKey, ttl) {
+    const cached = this.cache.get(cacheKey);
+    if (!cached) return null;
+    
+    const { data, timestamp } = cached;
+    const isExpired = Date.now() - timestamp > ttl;
+    
+    if (isExpired) {
+      this.cache.delete(cacheKey);
+      return null;
+    }
+    
+    return data;
+  }
+
+  setCachedData(cacheKey, data) {
+    this.cache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  clearCacheForUser(userId) {
+    // Clear all cache entries for a specific user
+    for (const [key] of this.cache) {
+      if (key.includes(`:${userId}:`)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  async deduplicateRequest(requestKey, apiCallFunction) {
+    // Check if there's already a pending request for this key
+    if (this.pendingRequests.has(requestKey)) {
+      console.log(`📋 Deduplicating request: ${requestKey}`);
+      return this.pendingRequests.get(requestKey);
+    }
+
+    // Create the request promise
+    const requestPromise = apiCallFunction();
+    
+    // Store the promise
+    this.pendingRequests.set(requestKey, requestPromise);
+
+    try {
+      const result = await requestPromise;
+      return result;
+    } finally {
+      // Always clean up the pending request when done
+      this.pendingRequests.delete(requestKey);
+    }
+  }
+
+  async checkRateLimit(userId) {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+
+    // Check global rate limit
+    this.globalRateLimit.requests = this.globalRateLimit.requests.filter(time => time > oneMinuteAgo);
+    if (this.globalRateLimit.requests.length >= this.globalRateLimit.maxRequestsPerMinute) {
+      throw new Error('Global rate limit exceeded. Please try again later.');
+    }
+
+    // Check global concurrent requests
+    if (this.pendingRequests.size >= this.globalRateLimit.maxConcurrentRequests) {
+      throw new Error('Too many concurrent requests globally. Please try again later.');
+    }
+
+    // Check user rate limit
+    if (!this.rateLimits.has(userId)) {
+      this.rateLimits.set(userId, { requests: [], concurrent: 0 });
+    }
+
+    const userLimits = this.rateLimits.get(userId);
+    userLimits.requests = userLimits.requests.filter(time => time > oneMinuteAgo);
+
+    if (userLimits.requests.length >= this.userRateLimit.maxRequestsPerMinute) {
+      throw new Error('User rate limit exceeded. Please try again later.');
+    }
+
+    // Check user concurrent requests
+    const userConcurrentRequests = Array.from(this.pendingRequests.keys())
+      .filter(key => key.includes(`:${userId}:`)).length;
+
+    if (userConcurrentRequests >= this.userRateLimit.maxConcurrentRequests) {
+      throw new Error('Too many concurrent requests for this user. Please try again later.');
+    }
+
+    // Record the request
+    this.globalRateLimit.requests.push(now);
+    userLimits.requests.push(now);
+  }
+
+  async withRateLimit(userId, requestKey, apiCallFunction) {
+    // Check rate limits first
+    await this.checkRateLimit(userId);
+
+    // Then proceed with deduplication and execution
+    return this.deduplicateRequest(requestKey, apiCallFunction);
+  }
+
+  getOptimalSyncOptions(lastSync, userOptions = {}) {
+    // If user provides explicit options, use them
+    if (userOptions.fromDate && userOptions.toDate) {
+      return {
+        fromDate: userOptions.fromDate,
+        toDate: userOptions.toDate,
+        count: userOptions.count || 1000
+      };
+    }
+
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    // If no previous sync, sync last 30 days
+    if (!lastSync) {
+      const defaultFromDate = new Date();
+      defaultFromDate.setDate(defaultFromDate.getDate() - 30);
+      
+      console.log(`📅 First-time sync: fetching last 30 days of transactions`);
+      return {
+        fromDate: userOptions.fromDate || defaultFromDate.toISOString().split('T')[0],
+        toDate: userOptions.toDate || today,
+        count: userOptions.count || 1000
+      };
+    }
+
+    // Calculate days since last sync
+    const lastSyncDate = new Date(lastSync);
+    const daysSinceSync = Math.ceil((now - lastSyncDate) / (24 * 60 * 60 * 1000));
+    
+    // Use dynamic window: sync from last sync date + buffer, max 30 days
+    const bufferDays = 1; // Add 1 day buffer to catch any missed transactions
+    const syncFromDate = new Date(lastSyncDate);
+    syncFromDate.setDate(syncFromDate.getDate() - bufferDays);
+    
+    // Cap at 30 days maximum
+    const maxDaysBack = 30;
+    if (daysSinceSync > maxDaysBack) {
+      const cappedFromDate = new Date();
+      cappedFromDate.setDate(cappedFromDate.getDate() - maxDaysBack);
+      
+      console.log(`📅 Large sync gap detected (${daysSinceSync} days), capping to last ${maxDaysBack} days`);
+      return {
+        fromDate: userOptions.fromDate || cappedFromDate.toISOString().split('T')[0],
+        toDate: userOptions.toDate || today,
+        count: userOptions.count || 1000
+      };
+    }
+
+    console.log(`📅 Incremental sync: fetching ${daysSinceSync + bufferDays} days of transactions since last sync`);
+    return {
+      fromDate: userOptions.fromDate || syncFromDate.toISOString().split('T')[0],
+      toDate: userOptions.toDate || today,
+      count: userOptions.count || 1000
+    };
+  }
+
   async fetchAccountsFromTeller(accessToken) {
     if (!this.supabase) throw new Error('Supabase client is not initialized');
-    try {
-      console.log('🏦 Fetching accounts from Teller API...');
-      
-      const response = await this.axiosInstance.get('/accounts', {
-        auth: {
-          username: accessToken,
-          password: ''
+    
+    // Create deduplication key
+    const dedupKey = `fetch_accounts:${accessToken}`;
+    
+    return this.deduplicateRequest(dedupKey, async () => {
+      try {
+        // Check cache first
+        const cacheKey = this.getCacheKey('accounts', accessToken);
+        const cachedAccounts = this.getCachedData(cacheKey, this.cacheTTL.accounts);
+        
+        if (cachedAccounts) {
+          console.log(`📦 Using cached accounts data (${cachedAccounts.length} accounts)`);
+          return cachedAccounts;
         }
-      });
+        
+        console.log('🏦 Fetching accounts from Teller API...');
+        
+        const response = await this.axiosInstance.get('/accounts', {
+          auth: {
+            username: accessToken,
+            password: ''
+          }
+        });
 
-      console.log(`📊 Found ${response.data.length} accounts from Teller`);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Error fetching accounts from Teller:', error.response?.data || error.message);
-      throw new Error(`Failed to fetch accounts: ${error.response?.data?.error || error.message}`);
-    }
+        console.log(`📊 Found ${response.data.length} accounts from Teller`);
+        
+        // Cache the result
+        this.setCachedData(cacheKey, response.data);
+        
+        return response.data;
+      } catch (error) {
+        console.error('❌ Error fetching accounts from Teller:', error.response?.data || error.message);
+        throw new Error(`Failed to fetch accounts: ${error.response?.data?.error || error.message}`);
+      }
+    });
   }
 
   async fetchTransactionsFromTeller(accessToken, accountId, options = {}) {
     if (!this.supabase) throw new Error('Supabase client is not initialized');
-    try {
-      console.log(`💰 Fetching transactions for account ${accountId} from Teller API...`);
-      
-      const params = new URLSearchParams();
-      if (options.fromDate) params.append('from_date', options.fromDate);
-      if (options.toDate) params.append('to_date', options.toDate);
-      if (options.count) params.append('count', options.count.toString());
-      
-      const response = await this.axiosInstance.get(`/accounts/${accountId}/transactions?${params}`, {
-        auth: {
-          username: accessToken,
-          password: ''
+    
+    // Create deduplication key that includes parameters
+    const paramsString = JSON.stringify(options);
+    const dedupKey = `fetch_transactions:${accessToken}:${accountId}:${paramsString}`;
+    
+    return this.deduplicateRequest(dedupKey, async () => {
+      try {
+        // Create cache key that includes parameters for unique caching
+        const cacheKey = this.getCacheKey('transactions', accessToken, accountId, paramsString);
+        const cachedTransactions = this.getCachedData(cacheKey, this.cacheTTL.transactions);
+        
+        if (cachedTransactions) {
+          console.log(`📦 Using cached transactions data for account ${accountId} (${cachedTransactions.length} transactions)`);
+          return cachedTransactions;
         }
-      });
+        
+        console.log(`💰 Fetching transactions for account ${accountId} from Teller API...`);
+        
+        const params = new URLSearchParams();
+        if (options.fromDate) params.append('from_date', options.fromDate);
+        if (options.toDate) params.append('to_date', options.toDate);
+        if (options.count) params.append('count', options.count.toString());
+        
+        const response = await this.axiosInstance.get(`/accounts/${accountId}/transactions?${params}`, {
+          auth: {
+            username: accessToken,
+            password: ''
+          }
+        });
 
-      console.log(`📊 Found ${response.data.length} transactions for account ${accountId}`);
-      return response.data;
-    } catch (error) {
-      console.error(`❌ Error fetching transactions for account ${accountId}:`, error.response?.data || error.message);
-      throw new Error(`Failed to fetch transactions: ${error.response?.data?.error || error.message}`);
-    }
+        console.log(`📊 Found ${response.data.length} transactions for account ${accountId}`);
+        
+        // Cache the result
+        this.setCachedData(cacheKey, response.data);
+        
+        return response.data;
+      } catch (error) {
+        console.error(`❌ Error fetching transactions for account ${accountId}:`, error.response?.data || error.message);
+        throw new Error(`Failed to fetch transactions: ${error.response?.data?.error || error.message}`);
+      }
+    });
   }
 
   async fetchAccountDetailsFromTeller(accessToken, accountId) {
     if (!this.supabase) throw new Error('Supabase client is not initialized');
     try {
+      // Check cache first
+      const cacheKey = this.getCacheKey('account_details', accessToken, accountId);
+      const cachedDetails = this.getCachedData(cacheKey, this.cacheTTL.account_details);
+      
+      if (cachedDetails) {
+        console.log(`📦 Using cached account details for ${accountId}`);
+        return cachedDetails;
+      }
+      
       console.log(`🔍 Fetching account details for ${accountId} from Teller API...`);
       
       const response = await this.axiosInstance.get(`/accounts/${accountId}/details`, {
@@ -96,6 +331,9 @@ class TellerService {
           password: ''
         }
       });
+
+      // Cache the result
+      this.setCachedData(cacheKey, response.data);
 
       return response.data;
     } catch (error) {
@@ -108,6 +346,9 @@ class TellerService {
     if (!this.supabase) throw new Error('Supabase client is not initialized');
     try {
       console.log(`🔄 Starting account sync for user ${userId}`);
+      
+      // Check rate limit before making API call
+      await this.checkRateLimit(userId);
       
       // Fetch accounts from Teller
       const tellerAccounts = await this.fetchAccountsFromTeller(accessToken);
@@ -243,10 +484,10 @@ class TellerService {
     try {
       console.log(`🔄 Starting transaction sync for account ${accountId}`);
       
-      // Get the user_id for this account
+      // Get the user_id and last_sync for this account
       const { data: account } = await this.supabase
         .from('accounts')
-        .select('user_id')
+        .select('user_id, last_sync')
         .eq('id', accountId)
         .single();
 
@@ -254,16 +495,12 @@ class TellerService {
         throw new Error(`Account ${accountId} not found`);
       }
 
-      // Default to syncing last 30 days if no date range specified
-      const defaultFromDate = new Date();
-      defaultFromDate.setDate(defaultFromDate.getDate() - 30);
-      
-      const syncOptions = {
-        fromDate: options.fromDate || defaultFromDate.toISOString().split('T')[0],
-        toDate: options.toDate || new Date().toISOString().split('T')[0],
-        count: options.count || 1000
-      };
+      // Calculate optimal sync window based on last sync
+      const syncOptions = this.getOptimalSyncOptions(account.last_sync, options);
 
+      // Check rate limit before making API call
+      await this.checkRateLimit(account.user_id);
+      
       // Fetch transactions from Teller
       const tellerTransactions = await this.fetchTransactionsFromTeller(
         accessToken, 
@@ -451,20 +688,8 @@ class TellerService {
         enrollmentId
       );
 
-      // Then sync transactions for each account
-      for (const account of accounts) {
-        try {
-          const transactionSyncResult = await this.syncTransactionsForAccount(
-            account.id,
-            accessToken,
-            account.teller_account_id
-          );
-          
-          totalTransactionsSynced += transactionSyncResult.created + transactionSyncResult.updated;
-        } catch (error) {
-          console.error(`❌ Error syncing transactions for account ${account.id}:`, error);
-        }
-      }
+      // Then sync transactions for each account using batch processing
+      totalTransactionsSynced = await this.batchSyncTransactions(accounts, accessToken);
 
       console.log(`✅ Full sync completed for enrollment ${enrollmentId}`);
       console.log(`📊 Accounts: ${accountSyncResult.created + accountSyncResult.updated}, Transactions: ${totalTransactionsSynced}`);
@@ -477,6 +702,69 @@ class TellerService {
       console.error(`❌ Error in syncAllAccountsForEnrollment for ${enrollmentId}:`, error);
       throw error;
     }
+  }
+
+  async batchSyncTransactions(accounts, accessToken) {
+    const batchSize = 3; // Process 3 accounts concurrently
+    let totalTransactionsSynced = 0;
+    
+    console.log(`🔄 Starting batch transaction sync for ${accounts.length} accounts (batch size: ${batchSize})`);
+    
+    // Process accounts in batches
+    for (let i = 0; i < accounts.length; i += batchSize) {
+      const batch = accounts.slice(i, i + batchSize);
+      
+      console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(accounts.length / batchSize)} (${batch.length} accounts)`);
+      
+      // Process batch concurrently
+      const batchPromises = batch.map(async (account) => {
+        try {
+          const result = await this.syncTransactionsForAccount(
+            account.id,
+            accessToken,
+            account.teller_account_id
+          );
+          
+          return {
+            accountId: account.id,
+            success: true,
+            created: result.created,
+            updated: result.updated,
+            error: null
+          };
+        } catch (error) {
+          console.error(`❌ Error syncing transactions for account ${account.id}:`, error);
+          return {
+            accountId: account.id,
+            success: false,
+            created: 0,
+            updated: 0,
+            error: error.message
+          };
+        }
+      });
+      
+      // Wait for all accounts in this batch to complete
+      const batchResults = await Promise.all(batchPromises);
+      
+      // Aggregate results
+      for (const result of batchResults) {
+        if (result.success) {
+          totalTransactionsSynced += result.created + result.updated;
+          console.log(`✅ Account ${result.accountId}: ${result.created} created, ${result.updated} updated`);
+        } else {
+          console.log(`❌ Account ${result.accountId}: failed - ${result.error}`);
+        }
+      }
+      
+      // Small delay between batches to prevent overwhelming the API
+      if (i + batchSize < accounts.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+      }
+    }
+    
+    console.log(`✅ Batch transaction sync completed: ${totalTransactionsSynced} total transactions synced`);
+    return totalTransactionsSynced;
   }
 
   async createConnectLink(userId) {
@@ -527,27 +815,46 @@ class TellerService {
   }
 
   async getAccountBalance(accessToken, accountId) {
-    try {
-      console.log(`💰 Fetching balance for account ${accountId}`);
-      
-      const response = await this.axiosInstance.get(`/accounts/${accountId}`, {
-        auth: {
-          username: accessToken,
-          password: ''
+    // Create deduplication key
+    const dedupKey = `fetch_balance:${accessToken}:${accountId}`;
+    
+    return this.deduplicateRequest(dedupKey, async () => {
+      try {
+        // Check cache first
+        const cacheKey = this.getCacheKey('balances', accessToken, accountId);
+        const cachedBalance = this.getCachedData(cacheKey, this.cacheTTL.balances);
+        
+        if (cachedBalance) {
+          console.log(`📦 Using cached balance data for account ${accountId}`);
+          return cachedBalance;
         }
-      });
+        
+        console.log(`💰 Fetching balance for account ${accountId}`);
+        
+        const response = await this.axiosInstance.get(`/accounts/${accountId}`, {
+          auth: {
+            username: accessToken,
+            password: ''
+          }
+        });
 
-      return {
-        account_id: response.data.id,
-        current_balance: parseFloat(response.data.balance),
-        available_balance: parseFloat(response.data.available_balance || response.data.balance),
-        currency: response.data.currency || 'USD',
-        last_updated: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error(`❌ Error fetching balance for account ${accountId}:`, error.response?.data || error.message);
-      throw new Error(`Failed to fetch account balance: ${error.response?.data?.error || error.message}`);
-    }
+        const balanceData = {
+          account_id: response.data.id,
+          current_balance: parseFloat(response.data.balance),
+          available_balance: parseFloat(response.data.available_balance || response.data.balance),
+          currency: response.data.currency || 'USD',
+          last_updated: new Date().toISOString()
+        };
+
+        // Cache the result
+        this.setCachedData(cacheKey, balanceData);
+
+        return balanceData;
+      } catch (error) {
+        console.error(`❌ Error fetching balance for account ${accountId}:`, error.response?.data || error.message);
+        throw new Error(`Failed to fetch account balance: ${error.response?.data?.error || error.message}`);
+      }
+    });
   }
 }
 

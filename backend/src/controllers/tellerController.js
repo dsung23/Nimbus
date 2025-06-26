@@ -330,22 +330,31 @@ class TellerController {
         });
       }
 
-      // Deactivate the account
-      const { error: updateError } = await getClient()
+      // Delete all transactions for this account first
+      const { error: deleteTransactionsError } = await getClient()
+        .from('transactions')
+        .delete()
+        .eq('account_id', accountId);
+
+      if (deleteTransactionsError) {
+        console.error('❌ Error deleting transactions:', deleteTransactionsError);
+        return res.status(500).json({
+          error: 'Failed to delete account transactions',
+          message: deleteTransactionsError.message
+        });
+      }
+
+      // Delete the account from database
+      const { error: deleteAccountError } = await getClient()
         .from('accounts')
-        .update({
-          is_active: false,
-          sync_status: 'disabled',
-          notes: 'Account disconnected by user',
-          updated_at: new Date().toISOString()
-        })
+        .delete()
         .eq('id', accountId);
 
-      if (updateError) {
-        console.error('❌ Error disconnecting account:', updateError);
+      if (deleteAccountError) {
+        console.error('❌ Error deleting account:', deleteAccountError);
         return res.status(500).json({
-          error: 'Failed to disconnect account',
-          message: updateError.message
+          error: 'Failed to delete account',
+          message: deleteAccountError.message
         });
       }
 
@@ -353,23 +362,19 @@ class TellerController {
       const { data: remainingAccounts, error: remainingError } = await getClient()
         .from('accounts')
         .select('id')
-        .eq('teller_enrollment_id', account.teller_enrollment_id)
-        .eq('is_active', true);
+        .eq('teller_enrollment_id', account.teller_enrollment_id);
 
-      // If no remaining active accounts, deactivate the enrollment
+      // If no remaining accounts, delete the enrollment
       if (!remainingError && (!remainingAccounts || remainingAccounts.length === 0)) {
         await getClient()
           .from('teller_enrollments')
-          .update({
-            status: 'disconnected',
-            updated_at: new Date().toISOString()
-          })
+          .delete()
           .eq('enrollment_id', account.teller_enrollment_id);
       }
 
       res.json({
         success: true,
-        message: 'Account disconnected successfully',
+        message: 'Account disconnected and deleted successfully',
         account: {
           id: account.id,
           name: account.name

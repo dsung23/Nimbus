@@ -18,12 +18,8 @@ const {
 } = require('../middleware/auth');
 const { validate, sanitizeInput, validateHeaders, validateRequestSize } = require('../middleware/validation');
 const {
-  registerSchema,
-  loginSchema,
   updateProfileSchema,
   changePasswordSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
   refreshTokenSchema,
   deleteAccountSchema
 } = require('../middleware/validationSchemas');
@@ -52,42 +48,7 @@ const passwordResetLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Public routes (no authentication required) with rate limiting and validation
-router.post('/register', 
-  validateRequestSize,
-  validateHeaders,
-  sanitizeInput,
-  authLimiter,
-  validate(registerSchema),
-  userController.registerUser
-);
-
-router.post('/login', 
-  validateRequestSize,
-  validateHeaders,
-  sanitizeInput,
-  authLimiter,
-  validate(loginSchema),
-  userController.loginUser
-);
-
-router.post('/forgot-password', 
-  validateRequestSize,
-  validateHeaders,
-  sanitizeInput,
-  passwordResetLimiter,
-  validate(forgotPasswordSchema),
-  userController.forgotPassword
-);
-
-router.post('/reset-password', 
-  validateRequestSize,
-  validateHeaders,
-  sanitizeInput,
-  passwordResetLimiter,
-  validate(resetPasswordSchema),
-  userController.resetPassword
-);
+// Public routes removed - no email authentication
 
 // Protected routes (authentication required) with validation
 router.get('/profile', 
@@ -138,15 +99,6 @@ router.post('/refresh-token',
   userController.refreshToken
 );
 
-// Endpoint aliases for better API compatibility
-router.post('/signup', 
-  validateRequestSize,
-  validateHeaders,
-  sanitizeInput,
-  authLimiter,
-  validate(registerSchema),
-  userController.registerUser
-);
 
 router.post('/refresh', 
   validateRequestSize,

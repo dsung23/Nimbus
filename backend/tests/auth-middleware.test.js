@@ -3,7 +3,6 @@
 const {
   requireRole,
   requireOwnership,
-  requireEmailVerified,
   requireActiveAccount
 } = require('../src/middleware/auth');
 
@@ -91,48 +90,6 @@ describe('Auth Middleware Functions', () => {
     });
   });
 
-  describe('requireEmailVerified', () => {
-    it('should allow user with verified email', () => {
-      req.user = {
-        id: '123',
-        email_verified: true
-      };
-
-      requireEmailVerified(req, res, next);
-
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
-    });
-
-    it('should deny user with unverified email', () => {
-      req.user = {
-        id: '123',
-        email_verified: false
-      };
-
-      requireEmailVerified(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Email verification required. Please verify your email before accessing this resource.'
-      });
-      expect(next).not.toHaveBeenCalled();
-    });
-
-    it('should deny unauthenticated user', () => {
-      req.user = null;
-
-      requireEmailVerified(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Authentication required'
-      });
-      expect(next).not.toHaveBeenCalled();
-    });
-  });
 
   describe('requireActiveAccount', () => {
     it('should allow active user', () => {

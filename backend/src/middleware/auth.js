@@ -68,8 +68,6 @@ const authenticateToken = async (req, res, next) => {
     // Add user info to request object
     req.user = {
       id: user.id,
-      email: user.email,
-      email_verified: user.email_confirmed_at ? true : false,
       profile: profileData || null
     };
 
@@ -294,38 +292,6 @@ const validateRefreshToken = async (req, res, next) => {
   }
 };
 
-/**
- * Middleware to check if user's email is verified
- * Must be used after authenticateToken middleware
- */
-const requireEmailVerified = (req, res, next) => {
-  try {
-    // Check if user is authenticated
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
-    }
-
-    // Check if email is verified
-    if (!req.user.email_verified) {
-      return res.status(403).json({
-        success: false,
-        message: 'Email verification required. Please verify your email before accessing this resource.'
-      });
-    }
-
-    next();
-  } catch (error) {
-    console.error('Email verification check error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Verification check failed',
-      error: error.message
-    });
-  }
-};
 
 /**
  * Middleware to check if user account is active
@@ -365,6 +331,5 @@ module.exports = {
   requireRole,
   requireOwnership,
   validateRefreshToken,
-  requireEmailVerified,
   requireActiveAccount
 }; 

@@ -8,85 +8,6 @@
 
 const Joi = require('joi');
 
-/**
- * Schema for user registration
- * Validates email, password, first name, and last name
- */
-const registerSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .messages({
-      'string.email': 'Please provide a valid email address',
-      'any.required': 'Email is required'
-    }),
-  password: Joi.string()
-    .min(8)
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .required()
-    .messages({
-      'string.min': 'Password must be at least 8 characters long',
-      'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-      'any.required': 'Password is required'
-    }),
-  first_name: Joi.string()
-    .min(1)
-    .max(50)
-    .pattern(/^[a-zA-Z\s'-]+$/)
-    .required()
-    .messages({
-      'string.min': 'First name cannot be empty',
-      'string.max': 'First name must be 50 characters or less',
-      'string.pattern.base': 'First name can only contain letters, spaces, hyphens, and apostrophes',
-      'any.required': 'First name is required'
-    }),
-  last_name: Joi.string()
-    .min(1)
-    .max(50)
-    .pattern(/^[a-zA-Z\s'-]+$/)
-    .required()
-    .messages({
-      'string.min': 'Last name cannot be empty',
-      'string.max': 'Last name must be 50 characters or less',
-      'string.pattern.base': 'Last name can only contain letters, spaces, hyphens, and apostrophes',
-      'any.required': 'Last name is required'
-    }),
-  phone: Joi.string()
-    .pattern(/^\+?[\d\s\-\(\)]{10,15}$/)
-    .required()
-    .messages({
-      'string.pattern.base': 'Please provide a valid phone number',
-      'any.required': 'Phone number is required'
-    }),
-  date_of_birth: Joi.date()
-    .max('now')
-    .required()
-    .messages({
-      'date.max': 'Date of birth cannot be in the future',
-      'any.required': 'Date of birth is required'
-    })
-});
-
-/**
- * Schema for user login
- * Validates email and password
- */
-const loginSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .messages({
-      'string.email': 'Please provide a valid email address',
-      'any.required': 'Email is required'
-    }),
-  password: Joi.string()
-    .min(1)
-    .required()
-    .messages({
-      'string.min': 'Password cannot be empty',
-      'any.required': 'Password is required'
-    })
-});
 
 /**
  * Schema for profile updates
@@ -158,49 +79,6 @@ const changePasswordSchema = Joi.object({
     })
 });
 
-/**
- * Schema for password reset requests
- * Validates email address
- */
-const forgotPasswordSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .messages({
-      'string.email': 'Please provide a valid email address',
-      'any.required': 'Email is required'
-    })
-});
-
-/**
- * Schema for password reset with token
- * Validates reset token and new password
- */
-const resetPasswordSchema = Joi.object({
-  token: Joi.string()
-    .min(1)
-    .required()
-    .messages({
-      'string.min': 'Reset token cannot be empty',
-      'any.required': 'Reset token is required'
-    }),
-  newPassword: Joi.string()
-    .min(8)
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .required()
-    .messages({
-      'string.min': 'New password must be at least 8 characters long',
-      'string.pattern.base': 'New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-      'any.required': 'New password is required'
-    }),
-  confirmPassword: Joi.string()
-    .valid(Joi.ref('newPassword'))
-    .required()
-    .messages({
-      'any.only': 'Passwords do not match',
-      'any.required': 'Password confirmation is required'
-    })
-});
 
 /**
  * Schema for token refresh
@@ -300,12 +178,8 @@ const syncAccountSchema = Joi.object({
 });
 
 module.exports = {
-  registerSchema,
-  loginSchema,
   updateProfileSchema,
   changePasswordSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
   refreshTokenSchema,
   deleteAccountSchema,
   tellerConnectSchema,

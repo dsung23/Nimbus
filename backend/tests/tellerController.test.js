@@ -19,6 +19,7 @@ const mockSupabase = {
   insert: jest.fn().mockReturnThis(),
   update: jest.fn().mockReturnThis(),
   upsert: jest.fn().mockReturnThis(),
+  delete: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
   single: jest.fn().mockReturnThis(),
   order: jest.fn().mockReturnThis(),
@@ -259,52 +260,90 @@ describe('TellerController', () => {
 
   describe('disconnectAccount', () => {
     it('should disconnect account successfully', async () => {
-      // Mock call 1: Get account
-      mockSupabase.from.mockReturnThis();
-      mockSupabase.select.mockReturnThis();
-      mockSupabase.eq.mockReturnThis();
-      mockSupabase.single.mockResolvedValueOnce({ data: { id: 'a1', name: 'Test Account', teller_enrollment_id: 'enr1' }, error: null });
+      // Query 1: Get account
+      const mockGetAccountQuery = {
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { id: 'a1', name: 'Test Account', teller_enrollment_id: 'enr1' }, error: null })
+      };
       
-      // Mock call 2: Update account (deactivate)
-      mockSupabase.from.mockReturnThis();
-      mockSupabase.update.mockReturnThis();
-      mockSupabase.eq.mockResolvedValueOnce({ error: null });
+      // Query 2: Delete transactions
+      const mockDeleteTransactionsQuery = {
+        from: jest.fn().mockReturnThis(),
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null })
+      };
       
-      // Mock call 3: Get remaining accounts
-      mockSupabase.from.mockReturnThis();
-      mockSupabase.select.mockReturnThis();
-      mockSupabase.eq.mockReturnThis();
-      mockSupabase.eq.mockResolvedValueOnce({ data: [], error: null });
+      // Query 3: Delete account
+      const mockDeleteAccountQuery = {
+        from: jest.fn().mockReturnThis(),
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null })
+      };
       
-      // Mock call 4: Update enrollment
-      mockSupabase.from.mockReturnThis();
-      mockSupabase.update.mockReturnThis();
-      mockSupabase.eq.mockResolvedValueOnce({ error: null });
+      // Query 4: Get remaining accounts
+      const mockGetRemainingQuery = {
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ data: [], error: null })
+      };
+      
+      // Query 5: Delete enrollment
+      const mockDeleteEnrollmentQuery = {
+        from: jest.fn().mockReturnThis(),
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null })
+      };
+      
+      getClient
+        .mockReturnValueOnce(mockGetAccountQuery)
+        .mockReturnValueOnce(mockDeleteTransactionsQuery)
+        .mockReturnValueOnce(mockDeleteAccountQuery)
+        .mockReturnValueOnce(mockGetRemainingQuery)
+        .mockReturnValueOnce(mockDeleteEnrollmentQuery);
       
       const res = await request(app).delete('/api/teller/accounts/a1');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
     });
     it('should 404 if account not found', async () => {
-      mockSupabase.from.mockReturnThis();
-      mockSupabase.select.mockReturnThis();
-      mockSupabase.eq.mockReturnThis();
-      mockSupabase.single.mockResolvedValue({ data: null, error: { message: 'not found' } });
+      const mockGetAccountQuery = {
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: null, error: { message: 'not found' } })
+      };
+      
+      getClient.mockReturnValueOnce(mockGetAccountQuery);
+      
       const res = await request(app).delete('/api/teller/accounts/a1');
       expect(res.status).toBe(404);
       expect(res.body.error).toBe('Account not found');
     });
-    it('should 500 if update fails', async () => {
-      mockSupabase.from.mockReturnThis();
-      mockSupabase.select.mockReturnThis();
-      mockSupabase.eq.mockReturnThis();
-      mockSupabase.single.mockResolvedValue({ data: { id: 'a1' }, error: null });
-      mockSupabase.from.mockReturnThis();
-      mockSupabase.update.mockReturnThis();
-      mockSupabase.eq.mockResolvedValue({ error: { message: 'fail' } });
+    it('should 500 if delete fails', async () => {
+      // Query 1: Get account (succeeds)
+      const mockGetAccountQuery = {
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { id: 'a1' }, error: null })
+      };
+      
+      // Query 2: Delete transactions (fails)
+      const mockDeleteTransactionsQuery = {
+        from: jest.fn().mockReturnThis(),
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: { message: 'fail' } })
+      };
+      
+      getClient
+        .mockReturnValueOnce(mockGetAccountQuery)
+        .mockReturnValueOnce(mockDeleteTransactionsQuery);
+      
       const res = await request(app).delete('/api/teller/accounts/a1');
       expect(res.status).toBe(500);
-      expect(res.body.error).toBe('Failed to disconnect account');
+      expect(res.body.error).toBe('Failed to delete account transactions');
     });
   });
 

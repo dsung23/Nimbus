@@ -10,7 +10,6 @@ const userSchema = {
   createTableSQL: `
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-      email VARCHAR(255) UNIQUE NOT NULL,
       first_name VARCHAR(100) NOT NULL,
       last_name VARCHAR(100),
       phone VARCHAR(20),
@@ -26,7 +25,6 @@ const userSchema = {
   
   // Indexes for better query performance
   indexes: [
-    'CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);',
     'CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);',
     'CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);',
     'CREATE INDEX IF NOT EXISTS idx_users_email_verified ON users(email_verified);'
@@ -43,12 +41,6 @@ const userSchema = {
   
   // Validation rules
   validation: {
-    email: {
-      required: true,
-      type: 'string',
-      format: 'email',
-      maxLength: 255
-    },
     first_name: {
       required: true,
       type: 'string',
@@ -67,10 +59,6 @@ const userSchema = {
     date_of_birth: {
       required: false,
       type: 'date'
-    },
-    email_verified: {
-      required: false,
-      type: 'boolean'
     }
   }
 };

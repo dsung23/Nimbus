@@ -38,10 +38,9 @@ const verifyPassword = async (password, hash) => {
 /**
  * Generate JWT access token
  * @param {string} userId - User ID
- * @param {string} email - User email
  * @returns {string} - JWT token
  */
-const generateAccessToken = (userId, email) => {
+const generateAccessToken = (userId) => {
   // TODO: Implement access token generation
   // 1. Create payload with user info
   // 2. Sign with JWT_SECRET
@@ -97,16 +96,6 @@ const checkPasswordStrength = (password) => {
   // 3. Return strength score and feedback
 };
 
-/**
- * Validate email format
- * @param {string} email - Email to validate
- * @returns {boolean} - True if valid email
- */
-const isValidEmail = (email) => {
-  // TODO: Implement email validation
-  // 1. Check email format with regex
-  // 2. Return true/false
-};
 
 /**
  * Generate random string for tokens
@@ -127,6 +116,5 @@ module.exports = {
   verifyToken,
   generateResetToken,
   checkPasswordStrength,
-  isValidEmail,
   generateRandomString
 }; 

@@ -120,6 +120,108 @@ router.post('/teller', express.raw({ type: 'application/json' }), async (req, re
 });
 
 /**
+ * Helper function to determine which accounts need syncing based on webhook payload
+ */
+function getAccountsToSync(allAccounts, affectedAccountIds) {
+  // If webhook doesn't specify affected accounts, sync all accounts
+  if (!affectedAccountIds || !Array.isArray(affectedAccountIds) || affectedAccountIds.length === 0) {
+    console.log('📋 No specific accounts mentioned in webhook, syncing all accounts');
+    return allAccounts;
+  }
+
+  // Filter to only sync accounts mentioned in webhook
+  const accountsToSync = allAccounts.filter(account => 
+    affectedAccountIds.includes(account.teller_account_id)
+  );
+
+  if (accountsToSync.length === 0) {
+    console.log('⚠️ No matching accounts found for specified account IDs in webhook');
+    // Fallback to all accounts if no matches found
+    return allAccounts;
+  }
+
+  console.log(`🎯 Targeting ${accountsToSync.length} specific accounts from webhook payload`);
+  return accountsToSync;
+}
+
+/**
+ * Smart sync for specific accounts using batch processing
+ */
+async function syncSpecificAccounts(accounts, accessToken) {
+  const batchSize = 3; // Process 3 accounts concurrently
+  let totalTransactionsSynced = 0;
+  const results = {
+    accounts: 0,
+    transactions: 0,
+    errors: []
+  };
+  
+  console.log(`🔄 Starting smart sync for ${accounts.length} accounts (batch size: ${batchSize})`);
+  
+  // Process accounts in batches
+  for (let i = 0; i < accounts.length; i += batchSize) {
+    const batch = accounts.slice(i, i + batchSize);
+    
+    console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(accounts.length / batchSize)} (${batch.length} accounts)`);
+    
+    // Process batch concurrently
+    const batchPromises = batch.map(async (account) => {
+      try {
+        const result = await tellerService.syncTransactionsForAccount(
+          account.id,
+          accessToken,
+          account.teller_account_id
+        );
+        
+        return {
+          accountId: account.id,
+          success: true,
+          created: result.created,
+          updated: result.updated,
+          error: null
+        };
+      } catch (error) {
+        console.error(`❌ Error syncing transactions for account ${account.id}:`, error);
+        return {
+          accountId: account.id,
+          success: false,
+          created: 0,
+          updated: 0,
+          error: error.message
+        };
+      }
+    });
+    
+    // Wait for all accounts in this batch to complete
+    const batchResults = await Promise.all(batchPromises);
+    
+    // Aggregate results
+    for (const result of batchResults) {
+      if (result.success) {
+        totalTransactionsSynced += result.created + result.updated;
+        results.accounts++;
+        console.log(`✅ Account ${result.accountId}: ${result.created} created, ${result.updated} updated`);
+      } else {
+        results.errors.push({
+          accountId: result.accountId,
+          error: result.error
+        });
+        console.log(`❌ Account ${result.accountId}: failed - ${result.error}`);
+      }
+    }
+    
+    // Small delay between batches to prevent overwhelming the API
+    if (i + batchSize < accounts.length) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay for webhooks
+    }
+  }
+  
+  results.transactions = totalTransactionsSynced;
+  console.log(`✅ Smart sync completed: ${results.accounts} accounts, ${results.transactions} transactions synced`);
+  return results;
+}
+
+/**
  * Handle enrollment.disconnected event
  * Sent when an enrollment enters a disconnected state
  */
@@ -226,14 +328,15 @@ async function handleTransactionsProcessed(webhook) {
   console.log('💰 Processing transactions.processed event');
   
   try {
-    const { enrollment_id } = webhook.payload;
+    const { enrollment_id, accounts: affectedAccounts } = webhook.payload;
     
     console.log('Enrollment ID:', enrollment_id);
+    console.log('Affected accounts in webhook:', affectedAccounts ? affectedAccounts.length : 'all');
     
     // Find accounts for this enrollment
     const { data: accounts, error } = await supabase
       .from('accounts')
-      .select('id, user_id, teller_account_id, teller_enrollment_id')
+      .select('id, user_id, teller_account_id, teller_enrollment_id, last_sync')
       .eq('teller_enrollment_id', enrollment_id);
     
     if (error || !accounts || accounts.length === 0) {
@@ -249,16 +352,23 @@ async function handleTransactionsProcessed(webhook) {
       return;
     }
 
-    // Sync accounts and transactions using the Teller service
-    const syncResult = await tellerService.syncAllAccountsForEnrollment(
-      enrollment_id, 
-      accessToken
-    );
+    // Smart sync: only sync specific accounts if mentioned in webhook
+    const accountsToSync = getAccountsToSync(accounts, affectedAccounts);
     
-    console.log(`✅ Sync completed for enrollment ${enrollment_id}:`, syncResult);
+    if (accountsToSync.length === 0) {
+      console.log('🔄 No accounts need syncing based on webhook payload');
+      return;
+    }
+
+    console.log(`🔄 Smart sync: processing ${accountsToSync.length}/${accounts.length} accounts`);
+
+    // Use batch sync with targeted accounts
+    const syncResult = await syncSpecificAccounts(accountsToSync, accessToken);
     
-    // Update sync status for all accounts in this enrollment
-    for (const account of accounts) {
+    console.log(`✅ Smart sync completed for enrollment ${enrollment_id}:`, syncResult);
+    
+    // Update sync status for processed accounts
+    for (const account of accountsToSync) {
       const { error: updateError } = await supabase
         .from('accounts')
         .update({
