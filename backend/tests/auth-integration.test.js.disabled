@@ -1,0 +1,482 @@
+require('dotenv').config();
+const request = require('supertest');
+const { createClient } = require('@supabase/supabase-js');
+const express = require('express');
+const cors = require('cors');
+const apiRoutes = require('../src/routes/api');
+
+// Create app instance for testing (without calling listen)
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use('/api', apiRoutes);
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+describe('User Authentication Integration Tests', () => {
+  let testUser = {
+    email: `test${Date.now()}@example.com`,
+    password: 'TestPassword123!',
+    first_name: 'Test',
+    last_name: 'User',
+    phone: '+1234567890',
+    date_of_birth: '1990-01-01'
+  };
+  
+  let authTokens = {};
+  let userId = null;
+
+  // Cleanup function to remove test user
+  const cleanupTestUser = async (email) => {
+    try {
+      // Get user by email first
+      const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
+      if (getUserError) {
+        console.warn('Error listing users for cleanup:', getUserError);
+        return;
+      }
+
+      const user = users.users.find(u => u.email === email);
+      if (user) {
+        // Delete from users table first
+        await supabaseAdmin
+          .from('users')
+          .delete()
+          .eq('id', user.id);
+        
+        // Delete from auth
+        await supabaseAdmin.auth.admin.deleteUser(user.id);
+      }
+    } catch (error) {
+      console.warn('Cleanup error:', error);
+    }
+  };
+
+  beforeAll(async () => {
+    // Clean up any existing test user
+    await cleanupTestUser(testUser.email);
+  });
+
+  afterAll(async () => {
+    // Clean up test user after tests
+    await cleanupTestUser(testUser.email);
+  });
+
+  describe('POST /api/auth/register', () => {
+    test('should register a new user successfully', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(testUser)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('registered successfully');
+      
+      expect(response.body).toHaveProperty('user');
+      expect(response.body.user).toHaveProperty('id');
+      expect(response.body.user).toHaveProperty('email', testUser.email);
+      expect(response.body.user).toHaveProperty('first_name', testUser.first_name);
+      expect(response.body.user).toHaveProperty('last_name', testUser.last_name);
+      expect(response.body.user).toHaveProperty('phone', testUser.phone);
+      expect(response.body.user).toHaveProperty('date_of_birth', testUser.date_of_birth);
+      expect(response.body.user).toHaveProperty('email_verified', false);
+      expect(response.body.user).toHaveProperty('is_active', true);
+      
+      expect(response.body).toHaveProperty('auth');
+      expect(response.body.auth).toHaveProperty('session');
+      expect(response.body.auth).toHaveProperty('confirmation_sent_at');
+
+      // Store user ID for later tests
+      userId = response.body.user.id;
+    });
+
+    test('should reject registration with duplicate email', async () => {
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(testUser)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('already registered');
+    });
+
+    test('should reject registration with invalid email', async () => {
+      const invalidUser = { ...testUser, email: 'invalid-email' };
+      
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(invalidUser)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject registration with weak password', async () => {
+      const weakPasswordUser = { 
+        ...testUser, 
+        email: `weak${Date.now()}@example.com`,
+        password: '123' 
+      };
+      
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(weakPasswordUser)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject registration with underage user', async () => {
+      const underageUser = { 
+        ...testUser, 
+        email: `underage${Date.now()}@example.com`,
+        date_of_birth: '2010-01-01' // 14 years old
+      };
+      
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(underageUser)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('18 years old');
+    });
+
+    test('should reject registration with missing required fields', async () => {
+      const incompleteUser = { 
+        email: testUser.email,
+        password: testUser.password
+        // Missing first_name, last_name, phone, date_of_birth
+      };
+      
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(incompleteUser)
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('POST /api/auth/login', () => {
+    test('should login successfully with correct credentials', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: testUser.email,
+          password: testUser.password
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message', 'Login successful');
+      
+      expect(response.body).toHaveProperty('user');
+      expect(response.body.user).toHaveProperty('id', userId);
+      expect(response.body.user).toHaveProperty('email', testUser.email);
+      expect(response.body.user).toHaveProperty('first_name', testUser.first_name);
+      expect(response.body.user).toHaveProperty('last_name', testUser.last_name);
+      expect(response.body.user).toHaveProperty('phone', testUser.phone);
+      expect(response.body.user).toHaveProperty('date_of_birth', testUser.date_of_birth);
+      expect(response.body.user).toHaveProperty('last_login');
+      
+      expect(response.body).toHaveProperty('auth');
+      expect(response.body.auth).toHaveProperty('access_token');
+      expect(response.body.auth).toHaveProperty('refresh_token');
+      expect(response.body.auth).toHaveProperty('expires_at');
+
+      // Store tokens for later tests
+      authTokens = response.body.auth;
+    });
+
+    test('should reject login with incorrect password', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: testUser.email,
+          password: 'wrongpassword'
+        })
+        .expect(401);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject login with non-existent email', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'nonexistent@example.com',
+          password: testUser.password
+        })
+        .expect(401);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject login with invalid email format', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'invalid-email',
+          password: testUser.password
+        })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject login with missing credentials', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: testUser.email
+          // Missing password
+        })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('GET /api/auth/profile', () => {
+    test('should get user profile with valid token', async () => {
+      const response = await request(app)
+        .get('/api/auth/profile')
+        .set('Authorization', `Bearer ${authTokens.access_token}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('user');
+      expect(response.body.user).toHaveProperty('id', userId);
+      expect(response.body.user).toHaveProperty('email', testUser.email);
+      expect(response.body.user).toHaveProperty('first_name', testUser.first_name);
+      expect(response.body.user).toHaveProperty('last_name', testUser.last_name);
+      expect(response.body.user).toHaveProperty('phone', testUser.phone);
+      expect(response.body.user).toHaveProperty('date_of_birth', testUser.date_of_birth);
+      expect(response.body.user).toHaveProperty('email_verified');
+      expect(response.body.user).toHaveProperty('is_active');
+      expect(response.body.user).toHaveProperty('preferences');
+      expect(response.body.user).toHaveProperty('last_login');
+      expect(response.body.user).toHaveProperty('created_at');
+      expect(response.body.user).toHaveProperty('updated_at');
+    });
+
+    test('should reject request without authorization token', async () => {
+      const response = await request(app)
+        .get('/api/auth/profile')
+        .expect(401);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject request with invalid token', async () => {
+      const response = await request(app)
+        .get('/api/auth/profile')
+        .set('Authorization', 'Bearer invalid-token')
+        .expect(401);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('PUT /api/auth/profile', () => {
+    test('should update user profile successfully', async () => {
+      const updateData = {
+        first_name: 'Updated',
+        last_name: 'Name',
+        phone: '+9876543210',
+        preferences: { theme: 'dark', notifications: true }
+      };
+
+      const response = await request(app)
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${authTokens.access_token}`)
+        .send(updateData)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message', 'Profile updated successfully');
+      expect(response.body).toHaveProperty('user');
+      expect(response.body.user).toHaveProperty('first_name', updateData.first_name);
+      expect(response.body.user).toHaveProperty('last_name', updateData.last_name);
+      expect(response.body.user).toHaveProperty('phone', updateData.phone);
+      expect(response.body.user).toHaveProperty('preferences', updateData.preferences);
+      expect(response.body.user).toHaveProperty('updated_at');
+    });
+
+    test('should update partial profile data', async () => {
+      const partialUpdate = {
+        first_name: 'PartialUpdate'
+      };
+
+      const response = await request(app)
+        .put('/api/auth/profile')
+        .set('Authorization', `Bearer ${authTokens.access_token}`)
+        .send(partialUpdate)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body.user).toHaveProperty('first_name', partialUpdate.first_name);
+      // Other fields should remain unchanged
+      expect(response.body.user).toHaveProperty('last_name', 'Name');
+    });
+
+    test('should reject profile update without authorization', async () => {
+      const updateData = { first_name: 'Should Fail' };
+
+      const response = await request(app)
+        .put('/api/auth/profile')
+        .send(updateData)
+        .expect(401);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject profile update with invalid token', async () => {
+      const updateData = { first_name: 'Should Fail' };
+
+      const response = await request(app)
+        .put('/api/auth/profile')
+        .set('Authorization', 'Bearer invalid-token')
+        .send(updateData)
+        .expect(401);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('POST /api/auth/refresh', () => {
+    test('should refresh token successfully', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .send({
+          refresh_token: authTokens.refresh_token
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message', 'Token refreshed successfully');
+      expect(response.body).toHaveProperty('user');
+      expect(response.body).toHaveProperty('auth');
+      expect(response.body.auth).toHaveProperty('access_token');
+      expect(response.body.auth).toHaveProperty('refresh_token');
+      expect(response.body.auth).toHaveProperty('expires_at');
+
+      // Update stored tokens
+      authTokens = response.body.auth;
+    });
+
+    test('should reject refresh with invalid token', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .send({
+          refresh_token: 'invalid-refresh-token'
+        })
+        .expect(401);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject refresh without token', async () => {
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .send({})
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('POST /api/auth/forgot-password', () => {
+    test('should handle forgot password request', async () => {
+      const response = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({
+          email: testUser.email
+        })
+        .expect(200);
+
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toContain('password reset link');
+    });
+
+    test('should handle forgot password for non-existent user', async () => {
+      const response = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({
+          email: 'nonexistent@example.com'
+        })
+        .expect(200);
+
+      // Should still return success for security (no email enumeration)
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('message');
+    });
+
+    test('should reject forgot password with invalid email', async () => {
+      const response = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({
+          email: 'invalid-email'
+        })
+        .expect(400);
+
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message');
+    });
+  });
+
+  describe('Database Integration', () => {
+    test('should verify user data exists in database', async () => {
+      const { data: userData, error } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      expect(error).toBeNull();
+      expect(userData).toBeTruthy();
+      expect(userData.id).toBe(userId);
+      expect(userData.email).toBe(testUser.email);
+      expect(userData.first_name).toBe('PartialUpdate'); // From previous update test
+      expect(userData.last_name).toBe('Name'); // From previous update test
+      expect(userData.phone).toBe('+9876543210'); // From previous update test
+      expect(userData.date_of_birth).toBe(testUser.date_of_birth);
+      expect(userData.is_active).toBe(true);
+      expect(userData.created_at).toBeTruthy();
+      expect(userData.updated_at).toBeTruthy();
+      expect(userData.last_login).toBeTruthy();
+    });
+
+    test('should verify auth user exists in Supabase Auth', async () => {
+      const { data: authUser, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+      expect(error).toBeNull();
+      expect(authUser).toBeTruthy();
+      expect(authUser.user.id).toBe(userId);
+      expect(authUser.user.email).toBe(testUser.email);
+      expect(authUser.user.user_metadata.first_name).toBe(testUser.first_name);
+      expect(authUser.user.user_metadata.last_name).toBe(testUser.last_name);
+    });
+  });
+});

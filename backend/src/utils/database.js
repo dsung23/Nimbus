@@ -24,8 +24,8 @@ if (!supabaseKey) {
 
 // Validate URL format
 if (!supabaseUrl.includes('supabase.co') || supabaseUrl.includes('dashboard')) {
-  console.error('❌ Invalid SUPABASE_URL format');
-  console.log('💡 Your SUPABASE_URL should look like: https://your-project.supabase.co');
+  console.error('Invalid SUPABASE_URL format');
+  console.log('Your SUPABASE_URL should look like: https://your-project.supabase.co');
   console.log('   Current value:', supabaseUrl);
   console.log('   Make sure you\'re using the API URL, not the dashboard URL');
   process.exit(1);

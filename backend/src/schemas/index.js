@@ -6,11 +6,15 @@ const accountSchema = require('./accountSchema');
 const transactionSchema = require('./transactionSchema');
 const chatSessionSchema = require('./chatSessionSchema');
 const chatMessageSchema = require('./chatMessageSchema');
+const tellerEnrollmentSchema = require('./tellerEnrollmentSchema');
+const webhookEventSchema = require('./webhookEventSchema');
 
 module.exports = {
   userSchema,
   accountSchema,
   transactionSchema,
   chatSessionSchema,
-  chatMessageSchema
+  chatMessageSchema,
+  tellerEnrollmentSchema,
+  webhookEventSchema
 }; 
