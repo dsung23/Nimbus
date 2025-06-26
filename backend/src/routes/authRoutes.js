@@ -16,7 +16,14 @@ const {
   requireOwnership, 
   requireActiveAccount 
 } = require('../middleware/auth');
-const { validate, sanitizeInput, validateHeaders, validateRequestSize } = require('../middleware/validation');
+const { 
+  validate, 
+  sanitizeInput, 
+  validateHeaders, 
+  validateRequestSize,
+  registrationSchema,
+  loginSchema
+} = require('../middleware/validation');
 const {
   updateProfileSchema,
   changePasswordSchema,
@@ -48,7 +55,24 @@ const passwordResetLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Public routes removed - no email authentication
+// Public registration and login routes
+router.post('/register', 
+  authLimiter,
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  validate(registrationSchema),
+  userController.registerUser
+);
+
+router.post('/login', 
+  authLimiter,
+  validateRequestSize,
+  validateHeaders,
+  sanitizeInput,
+  validate(loginSchema),
+  userController.loginUser
+);
 
 // Protected routes (authentication required) with validation
 router.get('/profile', 

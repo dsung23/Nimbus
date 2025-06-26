@@ -33,6 +33,206 @@ const supabaseAdmin = createClient(
 
 module.exports = {
   
+  registerUser: async (req, res) => {
+    try {
+      const { 
+        email, 
+        password, 
+        first_name, 
+        last_name, 
+        phone, 
+        date_of_birth 
+      } = req.body;
+
+      // Validation is now handled by middleware - data is already validated and sanitized
+      // Additional age validation (18+ requirement) with exact calculation
+      const dob = new Date(date_of_birth);
+      const age = new Date(Date.now() - dob).getUTCFullYear() - 1970;
+      if (age < 18) {
+        return res.status(400).json({
+          success: false,
+          message: 'You must be at least 18 years old to register'
+        });
+      }
+
+      // 1. Register user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name,
+            last_name,
+            phone,
+            date_of_birth
+          }
+        }
+      });
+
+      if (authError) {
+        return res.status(400).json({
+          success: false,
+          message: authError.message
+        });
+      }
+
+      // 2. Create user profile with all schema fields
+      console.log('🔧 Debug: About to insert profile...');
+      console.log('🔧 Service Role Key exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+      console.log('🔧 User ID:', authData.user.id);
+      
+      const profileData = {
+        id: authData.user.id,
+        email: authData.user.email,
+        password_hash: 'supabase_auth', // Placeholder - using Supabase Auth instead of local hash
+        first_name,
+        last_name,
+        phone,
+        date_of_birth,
+        is_active: true,
+        preferences: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_login: null
+      };
+
+      console.log('🔧 Profile data to insert:', profileData);
+
+      const { data: insertedProfile, error: profileError } = await supabaseAdmin
+        .from('users')
+        .insert(profileData)
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to create user profile',
+          error: profileError.message,
+          details: 'User account created in auth but profile creation failed'
+        });
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'User registered successfully! Please check your email to verify your account.',
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          first_name: insertedProfile.first_name,
+          last_name: insertedProfile.last_name,
+          phone: insertedProfile.phone,
+          date_of_birth: insertedProfile.date_of_birth,
+          is_active: insertedProfile.is_active,
+          created_at: insertedProfile.created_at
+        },
+        auth: {
+          session: authData.session,
+          confirmation_sent_at: authData.user.confirmation_sent_at
+        }
+      });
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
+  },
+  
+  loginUser: async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      // Validation is now handled by middleware - data is already validated and sanitized
+
+      // 1. Authenticate with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        return res.status(401).json({
+          success: false,
+          message: authError.message
+        });
+      }
+
+      // 2. Update last_login in user profile
+      const { error: updateError } = await supabaseAdmin
+        .from('users')
+        .update({ 
+          last_login: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', authData.user.id);
+
+      if (updateError) {
+        console.warn('Failed to update last_login:', updateError);
+        // Don't fail the login for this
+      }
+
+      // 3. Get user profile data
+      const { data: profileData, error: profileError } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Failed to fetch user profile:', profileError);
+        // Return basic auth data without profile
+        return res.status(200).json({
+          success: true,
+          message: 'Login successful',
+          user: {
+            id: authData.user.id,
+            email: authData.user.email
+          },
+          auth: {
+            access_token: authData.session.access_token,
+            refresh_token: authData.session.refresh_token,
+            expires_at: authData.session.expires_at
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        user: {
+          id: profileData.id,
+          email: profileData.email,
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          phone: profileData.phone,
+          date_of_birth: profileData.date_of_birth,
+          is_active: profileData.is_active,
+          preferences: profileData.preferences,
+          last_login: profileData.last_login,
+          created_at: profileData.created_at
+        },
+        auth: {
+          access_token: authData.session.access_token,
+          refresh_token: authData.session.refresh_token,
+          expires_at: authData.session.expires_at
+        }
+      });
+
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
+  },
+  
   getUserProfile: async (req, res) => {
     try {
       // Get user ID from authentication middleware
