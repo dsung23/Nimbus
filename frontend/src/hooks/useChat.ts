@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, Keyboard } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Message } from '../types/message';
 import { API_ENDPOINTS } from '../config/api';
+import { getAuthHeaders } from '../utils/auth';
 
 export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -10,24 +11,73 @@ export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+  
+  // Refs to track intervals and timeouts for cleanup
+  const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRefs = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  // Cleanup function for timeouts
+  const addTimeout = (callback: () => void, delay: number) => {
+    const timeout = setTimeout(() => {
+      callback();
+      timeoutRefs.current.delete(timeout);
+    }, delay);
+    timeoutRefs.current.add(timeout);
+    return timeout;
+  };
+
+  // Cleanup all timers on unmount
+  useEffect(() => {
+    return () => {
+      // Clear typing interval
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+      }
+      // Clear all timeouts
+      timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+      timeoutRefs.current.clear();
+  };
+  }, []);
+
+  // Animate text typing effect
+  const animateTyping = (messageId: string, fullText: string, delay: number = 0.1) => {
+    // Clear any existing typing interval
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+    }
+    
+    let currentIndex = 0;
+    setTypingMessageId(messageId);
+    
+    typingIntervalRef.current = setInterval(() => {
+      if (currentIndex <= fullText.length) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, text: fullText.substring(0, currentIndex) }
+            : msg
+        ));
+        currentIndex++;
+        } else {
+        if (typingIntervalRef.current) {
+          clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
+        }
+        setTypingMessageId(null);
+      }
+    }, delay);
+  };
 
   // Initialize chat session
   const initializeSession = async (): Promise<string> => {
     console.log('[useChat] 🚀 Initializing chat session...');
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      console.log('[useChat] 🔑 Got Access Token:', !!accessToken);
-      if (!accessToken) {
-        throw new Error('No access token found');
-      }
+      const headers = await getAuthHeaders();
 
       // Get user ID from token (you might need to decode JWT or store user ID separately)
       console.log('[useChat] 👤 Fetching user profile...');
       const userResponse = await fetch(API_ENDPOINTS.AUTH.PROFILE, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!userResponse.ok) {
@@ -42,10 +92,7 @@ export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
       console.log(`[useChat] 💬 Creating new session for user ${userId}...`);
       const sessionResponse = await fetch(`${API_ENDPOINTS.CHAT.SESSIONS}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           userId,
           title: 'New Chat Session'
@@ -70,29 +117,23 @@ export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
   const sendMessageToBackend = async (content: string): Promise<string> => {
     console.log(`[useChat] 📤 Sending message to session ${sessionId}...`);
     try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      if (!accessToken) {
-        throw new Error('No access token found');
-      }
-
       if (!sessionId) {
         throw new Error('No active chat session');
       }
 
+      const headers = await getAuthHeaders();
+      
       console.log('[useChat] 🗣️ Request Body:', JSON.stringify({ content }));
       const response = await fetch(`${API_ENDPOINTS.CHAT.SESSIONS}/${sessionId}/chat`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ content }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to send message');
-      }
+        }
 
       const data = await response.json();
       console.log('[useChat] 🤖 AI Response received:', data.aiResponse);
@@ -137,7 +178,7 @@ export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
   }, []);
 
   const sendMessage = async () => {
-    if (!inputText.trim() || isLoading || !sessionId) return;
+    if (!inputText.trim() || isLoading || !sessionId || typingMessageId) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -148,10 +189,11 @@ export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
+    Keyboard.dismiss();
     setIsLoading(true);
     setError(null);
 
-    setTimeout(() => {
+    addTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
 
@@ -160,12 +202,18 @@ export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: aiResponse,
+        text: '', // Start with empty text for typing effect
         isFromUser: false,
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, aiMessage]);
+      
+      // Start typing animation after a short delay
+      addTimeout(() => {
+        animateTyping(aiMessage.id, aiResponse);
+      }, 200);
+      
     } catch (error) {
       console.error('[useChat] 🔴 Failed to get AI response:', error);
       const errorMessage: Message = {
@@ -180,7 +228,7 @@ export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
       setError(error instanceof Error ? error.message : 'Failed to send message');
     } finally {
       setIsLoading(false);
-      setTimeout(() => {
+      addTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
@@ -193,6 +241,7 @@ export const useChat = (scrollViewRef: React.RefObject<ScrollView | null>) => {
     isLoading, 
     sendMessage,
     error,
-    sessionId 
+    sessionId,
+    typingMessageId 
   };
 }; 
