@@ -51,6 +51,12 @@ router.get('/sync-status', tellerController.getSyncStatus);
 router.get('/link', tellerController.createConnectLink);
 
 /**
+ * GET /api/teller/nonce
+ * Generate a secure nonce for Teller Connect
+ */
+router.get('/nonce', tellerController.generateNonce);
+
+/**
  * POST /api/teller/exchange
  * Exchange a public token for an access token
  */

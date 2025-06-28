@@ -245,6 +245,7 @@ class TellerService {
         }
         
         console.log('🏦 Fetching accounts from Teller API...');
+        console.log(`🔑 Using Access Token starting with: ${accessToken.substring(0, 8)}...`);
         
         const response = await this.axiosInstance.get('/accounts', {
           auth: {
@@ -252,6 +253,9 @@ class TellerService {
             password: ''
           }
         });
+
+        console.log('✅ Successfully received response from Teller API.');
+        console.log('📦 Teller response data:', response.data);
 
         console.log(`📊 Found ${response.data.length} accounts from Teller`);
         
@@ -261,6 +265,16 @@ class TellerService {
         return response.data;
       } catch (error) {
         console.error('❌ Error fetching accounts from Teller:', error.response?.data || error.message);
+        // Add more detailed logging for the error object itself
+        if (error.isAxiosError) {
+          console.error('🔴 Axios Error Details:', {
+            message: error.message,
+            url: error.config.url,
+            method: error.config.method,
+            status: error.response?.status,
+            data: error.response?.data,
+          });
+        }
         throw new Error(`Failed to fetch accounts: ${error.response?.data?.error || error.message}`);
       }
     });
@@ -353,6 +367,12 @@ class TellerService {
       // Fetch accounts from Teller
       const tellerAccounts = await this.fetchAccountsFromTeller(accessToken);
       
+      // Add a guard to ensure tellerAccounts is an array before proceeding.
+      if (!Array.isArray(tellerAccounts)) {
+        console.error('❌ Expected an array of accounts from Teller, but received:', tellerAccounts);
+        throw new Error('Failed to sync accounts: Unexpected response from financial institution.');
+      }
+
       const syncResults = {
         created: 0,
         updated: 0,
@@ -360,6 +380,12 @@ class TellerService {
       };
 
       for (const tellerAccount of tellerAccounts) {
+        // Add a guard to ensure the account object is usable
+        if (!tellerAccount || !tellerAccount.id) {
+          console.warn('⚠️ Skipping malformed account object received from Teller:', tellerAccount);
+          continue; // Skip to the next account
+        }
+        
         try {
           await this.syncSingleAccount(userId, tellerAccount, enrollmentId, accessToken);
           

@@ -7,9 +7,10 @@ interface AuthButtonProps {
   title: string;
   onPress: () => void;
   variant: 'primary' | 'secondary';
+  disabled?: boolean;
 }
 
-const ButtonContainer = styled(TouchableOpacity)<{ variant: 'primary' | 'secondary' }>`
+const ButtonContainer = styled(TouchableOpacity)<{ variant: 'primary' | 'secondary', disabled?: boolean }>`
   width: 100%;
   padding: 18px;
   border-radius: 16px;
@@ -22,6 +23,12 @@ const ButtonContainer = styled(TouchableOpacity)<{ variant: 'primary' | 'seconda
     css`
       margin-top: 16px;
       border-color: transparent;
+    `}
+  
+  ${({ disabled }) =>
+    disabled &&
+    css`
+      opacity: 0.5;
     `}
 `;
 
@@ -37,9 +44,9 @@ const ButtonText = styled(Text)<{ variant: 'primary' | 'secondary' }>`
     `}
 `;
 
-export const AuthButton: React.FC<AuthButtonProps> = ({ title, onPress, variant }) => {
+export const AuthButton: React.FC<AuthButtonProps> = ({ title, onPress, variant, disabled }) => {
   return (
-    <ButtonContainer variant={variant} onPress={onPress}>
+    <ButtonContainer variant={variant} onPress={onPress} disabled={disabled}>
       <BlurView
         intensity={variant === 'primary' ? 60 : 30}
         tint="dark"

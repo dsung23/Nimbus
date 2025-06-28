@@ -120,30 +120,20 @@ const deleteAccountSchema = Joi.object({
  * Validates enrollment ID and access token
  */
 const tellerConnectSchema = Joi.object({
-  enrollment_id: Joi.string()
-    .min(1)
-    .required()
-    .messages({
-      'string.min': 'Enrollment ID cannot be empty',
-      'any.required': 'Enrollment ID is required'
-    }),
-  access_token: Joi.string()
-    .min(1)
-    .required()
-    .messages({
-      'string.min': 'Access token cannot be empty',
-      'any.required': 'Access token is required'
-    }),
-  institution_id: Joi.string()
-    .optional()
-    .messages({
-      'string.base': 'Institution ID must be a string'
-    }),
-  institution_name: Joi.string()
-    .optional()
-    .messages({
-      'string.base': 'Institution name must be a string'
-    })
+  enrollment: Joi.object({
+    accessToken: Joi.string().required(),
+    user: Joi.object({
+      id: Joi.string().required(),
+    }).required(),
+    enrollment: Joi.object({
+      id: Joi.string().required(),
+      institution: Joi.object({
+        name: Joi.string().required(),
+        id: Joi.string().optional(),
+      }).required(),
+    }).required(),
+    signatures: Joi.array().items(Joi.string()).required(),
+  }).required(),
 });
 
 /**

@@ -1,6 +1,7 @@
 const tellerService = require('../services/tellerService');
 const { getClient, validateData } = require('../utils/database');
 const cryptoService = require('../utils/crypto');
+const crypto = require('crypto');
 
 class TellerController {
   /**
@@ -8,62 +9,80 @@ class TellerController {
    * This would typically be called after the user completes the Teller Connect flow
    */
   async connectAccount(req, res) {
-    try {
-      const { enrollment_id, access_token, institution_name, institution_id } = req.body;
-      const userId = req.user.id; // From auth middleware
+    const { enrollment } = req.body;
+    const userId = req.user.id;
+    let enrollmentId = null; // To hold the ID for potential cleanup
 
+    try {
       // Validate required fields
-      if (!enrollment_id || !access_token) {
+      if (!enrollment || !enrollment.accessToken || !enrollment.enrollment.id) {
         return res.status(400).json({
-          error: 'Missing required fields',
-          message: 'enrollment_id and access_token are required'
+          error: 'Invalid enrollment object',
+          message: 'The enrollment object with accessToken and enrollment.id is required'
         });
       }
 
-      console.log(`🔗 Connecting Teller account for user ${userId}`);
+      enrollmentId = enrollment.enrollment.id;
 
-      // Store the enrollment and access token
+      // TODO: Verify enrollment signature
+      console.log('TODO: Implement Teller enrollment signature verification.');
+
+      console.log(`🔗 Storing Teller enrollment for user ${userId}`);
+
+      // Step 1: Store the enrollment and access token
       const { error: enrollmentError } = await getClient()
         .from('teller_enrollments')
         .upsert({
           user_id: userId,
-          enrollment_id: enrollment_id,
-          access_token: cryptoService.encrypt(access_token),
-          institution_id: institution_id,
-          institution_name: institution_name,
+          enrollment_id: enrollmentId,
+          access_token: cryptoService.encrypt(enrollment.accessToken),
+          institution_id: enrollment.enrollment.institution.id || null,
+          institution_name: enrollment.enrollment.institution.name,
           status: 'active',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
 
       if (enrollmentError) {
-        console.error('❌ Error storing enrollment:', enrollmentError);
-        return res.status(500).json({
-          error: 'Failed to store enrollment',
-          message: enrollmentError.message
-        });
+        // If this initial insert fails, we can just throw the error
+        throw enrollmentError;
       }
 
-      // Sync accounts and transactions
+      // Step 2: Sync accounts and transactions
       const syncResult = await tellerService.syncAccountsForUser(
         userId, 
-        access_token, // Use plaintext token for API calls
-        enrollment_id
+        enrollment.accessToken,
+        enrollmentId
       );
 
       res.json({
         success: true,
-        message: 'Account connected successfully',
-        enrollment_id: enrollment_id,
+        message: 'Account connected and synced successfully',
+        enrollment_id: enrollmentId,
         sync_results: syncResult,
         timestamp: new Date().toISOString()
       });
 
     } catch (error) {
-      console.error('❌ Error in connectAccount:', error);
+      // If any step fails, log the specific error and send it back
+      console.error('🔴 CONNECT FAILURE:', error);
+
+      // Pseudo-transaction: Attempt to clean up the enrollment if it was created
+      if (enrollmentId) {
+        try {
+          await getClient()
+            .from('teller_enrollments')
+            .delete()
+            .eq('enrollment_id', enrollmentId);
+          console.log(`🧼 Cleaned up failed enrollment: ${enrollmentId}`);
+        } catch (cleanupError) {
+          console.error(`🔴 CLEANUP FAILURE for enrollment ${enrollmentId}:`, cleanupError);
+        }
+      }
+
       res.status(500).json({
-        error: 'Failed to connect account',
-        message: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message
+        success: false,
+        message: error.message || 'An unexpected server error occurred during account connection.'
       });
     }
   }
@@ -631,6 +650,24 @@ class TellerController {
       console.error('❌ Error in getAccountBalance:', error);
       res.status(500).json({
         error: 'Failed to get account balance',
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Generate a secure nonce for Teller Connect
+   */
+  async generateNonce(req, res) {
+    try {
+      const nonce = crypto.randomBytes(16).toString('hex');
+      // TODO: Store this nonce server-side, associated with the user's session,
+      // with a short expiry (e.g., 5 minutes) to be used for signature verification.
+      res.json({ success: true, nonce });
+    } catch (error) {
+      console.error('❌ Error generating nonce:', error);
+      res.status(500).json({
+        error: 'Failed to generate nonce',
         message: error.message
       });
     }
