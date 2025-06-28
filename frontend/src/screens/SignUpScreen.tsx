@@ -16,6 +16,13 @@ import { Background } from '../components/Background';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { signUpWithEmail } from '../api/authService';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  validateEmail,
+  validatePassword,
+  validateName,
+  validatePhone,
+  validateDateOfBirth,
+} from '../utils/validation';
 
 type SignUpScreenNavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -68,32 +75,70 @@ export const SignUpScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
     // Check for required fields
-    if (!firstName.trim() || !lastName.trim() || !dateOfBirth.trim() || !email.trim() || !phone.trim() || !password.trim()) {
-      setError('Please fill in all fields.');
+    if (!firstName.trim()) {
+      errors.firstName = 'First name is required';
+    } else {
+      const nameValidation = validateName(firstName.trim());
+      if (!nameValidation.isValid) {
+        errors.firstName = nameValidation.message!;
+      }
+    }
+    
+    if (!lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    } else {
+      const nameValidation = validateName(lastName.trim());
+      if (!nameValidation.isValid) {
+        errors.lastName = nameValidation.message!;
+      }
+    }
+    
+    if (!email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!validateEmail(email.trim())) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    if (!phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else {
+      const phoneValidation = validatePhone(phone.trim());
+      if (!phoneValidation.isValid) {
+        errors.phone = phoneValidation.message!;
+      }
+    }
+    
+    if (!dateOfBirth.trim()) {
+      errors.dateOfBirth = 'Date of birth is required';
+    } else {
+      const dateValidation = validateDateOfBirth(dateOfBirth.trim());
+      if (!dateValidation.isValid) {
+        errors.dateOfBirth = dateValidation.message!;
+      }
+    }
+    
+    if (!password.trim()) {
+      errors.password = 'Password is required';
+    } else {
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        errors.password = passwordValidation.message!;
+      }
+    }
+    
+    setFieldErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
+      setError('Please fix the errors above before continuing.');
       return false;
     }
-
-    // Validate email format
-    if (!email.includes('@') || !email.includes('.')) {
-      setError('Please enter a valid email address.');
-      return false;
-    }
-
-    // Validate password length
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return false;
-    }
-
-    // Validate phone number (basic check for digits)
-    if (phone.length < 10) {
-      setError('Please enter a valid phone number.');
-      return false;
-    }
-
+    
     return true;
   };
 
@@ -104,10 +149,11 @@ export const SignUpScreen: React.FC = () => {
 
     setIsLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
       const { user, error: signUpError } = await signUpWithEmail(
-        email,
+        email.trim(),
         password,
         {
           first_name: firstName.trim(),
@@ -118,7 +164,13 @@ export const SignUpScreen: React.FC = () => {
       );
 
       if (signUpError) {
-        setError(signUpError.message);
+        // Handle backend validation errors
+        if (signUpError.message.includes('Validation failed') || signUpError.message.includes('errors')) {
+          // This would be handled by the enhanced error handling in authService
+          setError(signUpError.message);
+        } else {
+          setError(signUpError.message);
+        }
         return;
       }
 
@@ -135,6 +187,66 @@ export const SignUpScreen: React.FC = () => {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFirstNameChange = (text: string) => {
+    setFirstName(text);
+    if (fieldErrors.firstName) {
+      setFieldErrors(prev => ({ ...prev, firstName: '' }));
+    }
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handleLastNameChange = (text: string) => {
+    setLastName(text);
+    if (fieldErrors.lastName) {
+      setFieldErrors(prev => ({ ...prev, lastName: '' }));
+    }
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (fieldErrors.email) {
+      setFieldErrors(prev => ({ ...prev, email: '' }));
+    }
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handlePhoneChange = (text: string) => {
+    setPhone(text);
+    if (fieldErrors.phone) {
+      setFieldErrors(prev => ({ ...prev, phone: '' }));
+    }
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handleDateOfBirthChange = (text: string) => {
+    setDateOfBirth(text);
+    if (fieldErrors.dateOfBirth) {
+      setFieldErrors(prev => ({ ...prev, dateOfBirth: '' }));
+    }
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (fieldErrors.password) {
+      setFieldErrors(prev => ({ ...prev, password: '' }));
+    }
+    if (error) {
+      setError(null);
     }
   };
 
@@ -161,56 +273,62 @@ export const SignUpScreen: React.FC = () => {
               <AuthInput
                 label="First Name"
                 value={firstName}
-                onChangeText={setFirstName}
+                onChangeText={handleFirstNameChange}
                 placeholder="Enter your first name"
                 icon="person"
                 autoCapitalize="words"
                 autoComplete="off"
+                error={fieldErrors.firstName}
               />
 
               <AuthInput
                 label="Last Name"
                 value={lastName}
-                onChangeText={setLastName}
+                onChangeText={handleLastNameChange}
                 placeholder="Enter your last name"
                 icon="person"
                 autoCapitalize="words"
                 autoComplete="off"
+                error={fieldErrors.lastName}
               />
 
               <DatePicker
                 label="Date of Birth"
                 value={dateOfBirth}
-                onChangeText={setDateOfBirth}
+                onChangeText={handleDateOfBirthChange}
                 placeholder="Select your date of birth"
                 icon="calendar"
+                error={fieldErrors.dateOfBirth}
               />
 
               <AuthInput
                 label="Email Address"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={handleEmailChange}
                 placeholder="Enter your email"
                 icon="mail"
                 keyboardType="email-address"
                 autoComplete="email"
+                error={fieldErrors.email}
               />
 
               <PhoneNumberInput
                 label="Phone Number"
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={handlePhoneChange}
                 placeholder="Enter your phone number"
+                error={fieldErrors.phone}
               />
 
               <AuthInput
                 label="Password"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={handlePasswordChange}
                 placeholder="Create a password"
                 secureTextEntry
                 icon="lock-closed"
                 autoComplete="password"
+                error={fieldErrors.password}
               />
 
               <AuthButton

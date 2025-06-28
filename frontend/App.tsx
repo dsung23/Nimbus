@@ -50,16 +50,18 @@ const AppContent: React.FC = () => {
       // For dev bypass, simulate a login with mock user
       const mockUser: User = {
         id: 'dev-user-123',
-        fullName: 'Dev User',
+        first_name: 'Dev',
+        last_name: 'User',
         email: 'dev@example.com',
-        phoneNumber: '+1 (555) 123-4567',
-        dateOfBirth: '1990-01-01',
-        memberSince: '2024-01-01',
+        phone: '+1 (555) 123-4567',
+        date_of_birth: '1990-01-01',
+        is_active: true,
+        created_at: '2024-01-01T00:00:00.000Z',
       };
       
       try {
         await signIn(mockUser);
-        console.log('Dev bypass: signed in as', mockUser.fullName);
+        console.log('Dev bypass: signed in as', mockUser.first_name + ' ' + mockUser.last_name);
       } catch (error) {
         console.error('Dev bypass: failed to sign in', error);
       }

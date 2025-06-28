@@ -16,7 +16,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => (
       <Text style={styles.avatarText}>{getInitials(user.first_name, user.last_name)}</Text>
     </View>
     <Text style={styles.name}>{user.first_name} {user.last_name}</Text>
-    <Text style={styles.memberSince}>Member since {user.memberSince ? new Date(user.memberSince).getFullYear() : ''}</Text>
+    <Text style={styles.memberSince}>Member since {user.created_at ? new Date(user.created_at).getFullYear() : ''}</Text>
   </View>
 );
 

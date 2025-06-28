@@ -29,10 +29,7 @@ export const useUserProfile = () => {
       
       const data = await response.json();
       if (response.ok && data.success && data.user) {
-        setUser({
-          ...data.user,
-          memberSince: data.user.created_at
-        });
+        setUser(data.user);
       } else {
         throw new Error(data.message || 'Failed to fetch profile');
       }
@@ -57,7 +54,7 @@ export const useUserProfile = () => {
       const { success: apiSuccess, data, error: apiError } = await updateUserProfile(user.id, updates);
       
       if (apiSuccess) {
-        setUser({ ...data, memberSince: user.memberSince });
+        setUser(data);
         setSuccess('Profile updated successfully');
         return { success: true, data };
       } else {
