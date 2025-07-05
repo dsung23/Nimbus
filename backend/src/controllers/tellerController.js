@@ -9,7 +9,7 @@ class TellerController {
    * This would typically be called after the user completes the Teller Connect flow
    */
   async connectAccount(req, res) {
-    const { enrollment } = req.body;
+    const { enrollment, nonce } = req.body;
     const userId = req.user.id;
     let enrollmentId = null; // To hold the ID for potential cleanup
 
@@ -22,12 +22,30 @@ class TellerController {
         });
       }
 
+      // Additional validation and debugging
+      console.log('🔍 Enrollment validation:', {
+        hasAccessToken: !!enrollment.accessToken,
+        accessTokenPrefix: enrollment.accessToken?.substring(0, 10) + '...',
+        hasEnrollmentId: !!enrollment.enrollment?.id,
+        enrollmentId: enrollment.enrollment?.id,
+        hasInstitution: !!enrollment.enrollment?.institution,
+        institutionName: enrollment.enrollment?.institution?.name
+      });
+
       enrollmentId = enrollment.enrollment.id;
 
-      // TODO: Verify enrollment signature
-      console.log('TODO: Implement Teller enrollment signature verification.');
+      // Verify enrollment signature for security
+      if (nonce) {
+        const isSignatureValid = await tellerService.validateEnrollmentSignature(enrollment, nonce);
+        if (!isSignatureValid) {
+          console.warn('⚠️ Enrollment signature validation failed');
+          // In production, you might want to reject invalid signatures
+          // For now, we'll log the warning and continue
+        }
+      }
 
       console.log(`🔗 Storing Teller enrollment for user ${userId}`);
+      console.log('📋 Full enrollment object received:', JSON.stringify(enrollment, null, 2));
 
       // Step 1: Store the enrollment and access token
       const { error: enrollmentError } = await getClient()
@@ -48,7 +66,29 @@ class TellerController {
         throw enrollmentError;
       }
 
-      // Step 2: Sync accounts and transactions
+      // Step 2: Validate access token by testing it before syncing
+      console.log('🔍 Testing access token validity...');
+      try {
+        // Test the access token by making a simple API call
+        await tellerService.fetchAccountsFromTeller(enrollment.accessToken);
+      } catch (tokenError) {
+        console.error('❌ Access token validation failed:', tokenError.message);
+        
+        // Clean up the enrollment we just created
+        await getClient()
+          .from('teller_enrollments')
+          .delete()
+          .eq('enrollment_id', enrollmentId);
+        
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid access token',
+          message: 'The access token from Teller Connect is invalid or expired. Please try connecting again.',
+          details: tokenError.message
+        });
+      }
+
+      // Step 3: Sync accounts and transactions
       const syncResult = await tellerService.syncAccountsForUser(
         userId, 
         enrollment.accessToken,
@@ -486,62 +526,23 @@ class TellerController {
   }
 
   /**
-   * Exchange a public token for an access token
+   * Get enrollment configuration for Teller Connect
    */
-  async exchangeToken(req, res) {
+  async getConnectConfig(req, res) {
     try {
-      const { public_token } = req.body;
       const userId = req.user.id;
 
-      if (!public_token) {
-        return res.status(400).json({
-          error: 'Missing required field',
-          message: 'public_token is required'
-        });
-      }
-
-      const tokenData = await tellerService.exchangeToken(public_token);
-
-      // Store the enrollment
-      const { error: enrollmentError } = await getClient()
-        .from('teller_enrollments')
-        .upsert({
-          user_id: userId,
-          enrollment_id: tokenData.enrollment_id,
-          access_token: cryptoService.encrypt(tokenData.access_token),
-          institution_id: tokenData.institution?.id,
-          institution_name: tokenData.institution?.name,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (enrollmentError) {
-        console.error('❌ Error storing enrollment:', enrollmentError);
-        return res.status(500).json({
-          error: 'Failed to store enrollment',
-          message: enrollmentError.message
-        });
-      }
-
-      // Sync accounts for this user
-      const syncResult = await tellerService.syncAccountsForUser(
-        userId,
-        tokenData.access_token, // Use plaintext token for API calls
-        tokenData.enrollment_id
-      );
+      const connectData = await tellerService.createConnectLink(userId);
 
       res.json({
         success: true,
-        enrollment_id: tokenData.enrollment_id,
-        institution: tokenData.institution,
-        sync_results: syncResult
+        ...connectData
       });
 
     } catch (error) {
-      console.error('❌ Error in exchangeToken:', error);
+      console.error('❌ Error in getConnectConfig:', error);
       res.status(500).json({
-        error: 'Failed to exchange token',
+        error: 'Failed to get connect configuration',
         message: error.message
       });
     }

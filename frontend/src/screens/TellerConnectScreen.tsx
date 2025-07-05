@@ -16,7 +16,7 @@ import { WebView } from 'react-native-webview';
 import { AuthButton } from '../components/AuthButton';
 import { Background } from '../components/Background';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
-import { getNonce, connectAccount } from '../api/tellerService';
+import { getNonce, connectAccount, getConnectConfig } from '../api/tellerService';
 import { TellerConnectEnrollment } from '../types/teller';
 
 // Get the App ID from environment variables or hardcode for now
@@ -111,9 +111,10 @@ export const TellerConnectScreen: React.FC = () => {
       // Send the enrollment data to our backend
       await connectAccount(enrollment);
       
-      // Call the onSuccess callback passed from the previous screen
-      if (route.params?.onSuccess) {
-        await route.params.onSuccess();
+      // Use navigation.getParent() to go back or reset to main screen
+      const canGoBack = navigation.canGoBack();
+      if (canGoBack) {
+        navigation.goBack();
       } else {
         navigation.reset({ index: 0, routes: [{ name: 'Main' as never }] });
       }
@@ -154,8 +155,9 @@ export const TellerConnectScreen: React.FC = () => {
   };
 
   const handleSkip = async () => {
-    if (route.params?.onSuccess) {
-      await route.params.onSuccess();
+    const canGoBack = navigation.canGoBack();
+    if (canGoBack) {
+      navigation.goBack();
     } else {
       navigation.reset({ index: 0, routes: [{ name: 'Main' as never }] });
     }

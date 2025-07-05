@@ -9,7 +9,7 @@ export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   SignUp: undefined;
-  TellerConnect: { onSuccess: () => void } | undefined;
+  TellerConnect: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();

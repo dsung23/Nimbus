@@ -1,6 +1,5 @@
 export const API_CONFIG = {
-  //localhost:3789
-  BASE_URL: 'http://192.168.1.129:3789',
+  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3789',
   AUTH_ENDPOINT: '/api/auth',
   TELLER_ENDPOINT: '/api/teller',
 } as const;
@@ -15,7 +14,7 @@ export const API_ENDPOINTS = {
   TELLER: {
     CONNECT: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/connect`,
     ACCOUNTS: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/accounts`,
-    LINK: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/link`,
+    CONNECT_CONFIG: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/connect-config`,
     SYNC_STATUS: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/sync-status`,
     NONCE: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/nonce`,
   },

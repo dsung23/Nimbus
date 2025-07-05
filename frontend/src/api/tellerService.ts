@@ -37,6 +37,8 @@ const handleApiResponse = async <T>(response: Response): Promise<T> => {
       throw new Error('Authentication failed. Please log in again.');
     } else if (response.status === 403) {
       throw new Error('Access denied. You do not have permission to perform this action.');
+    } else if (response.status === 400 && data.error === 'Invalid access token') {
+      throw new Error(data.message || 'The bank connection failed. Please try connecting again.');
     } else if (response.status >= 500) {
       throw new Error('Server error. Please try again later.');
     } else {
@@ -75,14 +77,14 @@ export const getNonce = async (): Promise<TellerNonceResponse> => {
 
 
 /**
- * Create a Teller Connect link for the authenticated user
- * GET /api/teller/link
+ * Get Teller Connect configuration for the authenticated user
+ * GET /api/teller/connect-config
  */
-export const createConnectLink = async (): Promise<TellerConnectLinkResponse> => {
+export const getConnectConfig = async (): Promise<TellerConnectLinkResponse> => {
   try {
     const headers = await getAuthHeaders();
     
-    const response = await fetch(API_ENDPOINTS.TELLER.LINK, {
+    const response = await fetch(API_ENDPOINTS.TELLER.CONNECT_CONFIG, {
       method: 'GET',
       headers,
     });
@@ -97,7 +99,7 @@ export const createConnectLink = async (): Promise<TellerConnectLinkResponse> =>
 
     return data;
   } catch (error) {
-    console.error('Error creating Teller Connect link:', error);
+    console.error('Error getting Teller Connect configuration:', error);
     throw error;
   }
 };
@@ -252,4 +254,27 @@ export const getTransactions = async (
     console.error(`Error fetching transactions for account ${accountId}:`, error);
     throw error;
   }
-}; 
+};
+
+/**
+ * Get account balance for a specific account
+ * GET /api/teller/accounts/:accountId/balance
+ */
+export const getAccountBalance = async (accountId: string): Promise<any> => {
+  try {
+    const headers = await getAuthHeaders();
+    
+    const response = await fetch(
+      `${API_ENDPOINTS.TELLER.ACCOUNTS}/${accountId}/balance`,
+      {
+        method: 'GET',
+        headers,
+      }
+    );
+    
+    return await handleApiResponse(response);
+  } catch (error) {
+    console.error(`Error fetching balance for account ${accountId}:`, error);
+    throw error;
+  }
+};
