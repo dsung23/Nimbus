@@ -58,49 +58,6 @@ router.get('/version', (req, res) => {
   });
 });
 
-// Mount route modules
-router.use('/auth', authRoutes);
-router.use('/admin', adminRoutes);
-router.use('/teller', tellerRoutes);
-router.use('/accounts', accountRoutes);
-// TODO: Mount additional route modules when they are created
-// router.use('/users', userRoutes);
-// router.use('/transactions', transactionRoutes);
-// router.use('/chat', chatRoutes);
-// router.use('/analytics', analyticsRoutes);
-
-// 404 handler for undefined routes
-router.use((req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    message: `The requested route ${req.originalUrl} does not exist`,
-    availableRoutes: [
-      '/health',
-      '/version',
-      '/auth/register',
-      '/auth/signup',
-      '/auth/login',
-      '/auth/forgot-password',
-      '/auth/reset-password',
-      '/auth/profile',
-      '/auth/refresh-token',
-      '/auth/refresh',
-      '/admin/users',
-      '/admin/system/stats',
-      '/admin/analytics/users',
-      '/teller/connect',
-      '/teller/connect-config',
-      '/teller/nonce',
-      '/teller/accounts',
-      '/teller/accounts/:accountId/transactions',
-      '/teller/accounts/:accountId/sync',
-      '/teller/sync-status',
-      '/accounts',
-      '/accounts/:id/balance'
-    ]
-  });
-});
-
 // Mount existing route modules
 router.use('/llm', llmRoutes);
 router.use('/chat', persistentChatRoutes);
@@ -134,6 +91,7 @@ router.use((req, res) => {
       '/auth/profile',
       '/auth/refresh-token',
       '/auth/refresh',
+      '/auth/sync',
       '/admin/users',
       '/admin/system/stats',
       '/admin/analytics/users',

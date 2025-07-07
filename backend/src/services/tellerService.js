@@ -254,45 +254,41 @@ class TellerService {
           const mockAccounts = [
             {
               id: 'acc_pf53ae2brofp6upddo001',
-              name: 'Test Checking Account',
+              enrollment_id: 'enr_pf53ae2brofp6upddo001',
+              links: {
+                balances: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo001/balances',
+                self: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo001',
+                transactions: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo001/transactions'
+              },
+              institution: {
+                name: 'Chase Bank',
+                id: 'chase'
+              },
               type: 'depository',
+              name: 'Test Checking Account',
               subtype: 'checking',
-              status: 'open',
-              balance: 1234.56,
-              available_balance: 1234.56,
               currency: 'USD',
               last_four: '1234',
-              institution: {
-                id: 'chase',
-                name: 'Chase Bank'
-              },
-              enrollment_id: 'enr_pf53ae2brofp6upddo001',
-              routing_numbers: ['021000021'],
-              links: {
-                balances: '/accounts/acc_pf53ae2brofp6upddo001/balances',
-                transactions: '/accounts/acc_pf53ae2brofp6upddo001/transactions'
-              }
+              status: 'open'
             },
             {
               id: 'acc_pf53ae2brofp6upddo002',
-              name: 'Test Savings Account',
+              enrollment_id: 'enr_pf53ae2brofp6upddo001',
+              links: {
+                balances: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo002/balances',
+                self: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo002',
+                transactions: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo002/transactions'
+              },
+              institution: {
+                name: 'Chase Bank',
+                id: 'chase'
+              },
               type: 'depository',
+              name: 'Test Savings Account',
               subtype: 'savings',
-              status: 'open',
-              balance: 5678.90,
-              available_balance: 5678.90,
               currency: 'USD',
               last_four: '5678',
-              institution: {
-                id: 'chase',
-                name: 'Chase Bank'
-              },
-              enrollment_id: 'enr_pf53ae2brofp6upddo001',
-              routing_numbers: ['021000021'],
-              links: {
-                balances: '/accounts/acc_pf53ae2brofp6upddo002/balances',
-                transactions: '/accounts/acc_pf53ae2brofp6upddo002/transactions'
-              }
+              status: 'open'
             }
           ];
           
@@ -387,52 +383,70 @@ class TellerService {
           console.log('🧪 Using sandbox mode with mock transaction data');
           const mockTransactions = [
             {
-              id: 'txn_pf53ae2brofp6upddo001',
-              amount: '-23.45',
-              date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Yesterday
+              details: {
+                processing_status: 'complete',
+                category: 'dining',
+                counterparty: {
+                  name: 'Starbucks Coffee',
+                  type: 'organization'
+                }
+              },
+              running_balance: null,
               description: 'Coffee Shop Purchase',
-              category: 'food_and_drink',
-              merchant: {
-                name: 'Starbucks',
-                location: 'New York, NY'
+              id: 'txn_pf53ae2brofp6upddo001',
+              date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Yesterday
+              account_id: accountId,
+              links: {
+                account: `https://api.teller.io/accounts/${accountId}`,
+                self: `https://api.teller.io/accounts/${accountId}/transactions/txn_pf53ae2brofp6upddo001`
               },
-              status: 'posted',
-              type: 'purchase',
-              check_number: null,
-              reference_number: 'REF123456',
-              posted_date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              amount: '-23.45',
+              type: 'card_payment',
+              status: 'posted'
             },
             {
-              id: 'txn_pf53ae2brofp6upddo002',
-              amount: '-1250.00',
-              date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days ago
+              details: {
+                processing_status: 'complete',
+                category: 'utilities',
+                counterparty: {
+                  name: 'Property Management Co',
+                  type: 'organization'
+                }
+              },
+              running_balance: null,
               description: 'Monthly Rent Payment',
-              category: 'rent',
-              merchant: {
-                name: 'Property Management Co',
-                location: 'New York, NY'
+              id: 'txn_pf53ae2brofp6upddo002',
+              date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days ago
+              account_id: accountId,
+              links: {
+                account: `https://api.teller.io/accounts/${accountId}`,
+                self: `https://api.teller.io/accounts/${accountId}/transactions/txn_pf53ae2brofp6upddo002`
               },
-              status: 'posted',
-              type: 'payment',
-              check_number: null,
-              reference_number: 'RENT202507',
-              posted_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              amount: '-1250.00',
+              type: 'transfer',
+              status: 'posted'
             },
             {
-              id: 'txn_pf53ae2brofp6upddo003',
-              amount: '2500.00',
-              date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days ago
-              description: 'Salary Deposit',
-              category: 'payroll',
-              merchant: {
-                name: 'ACME Corp',
-                location: 'New York, NY'
+              details: {
+                processing_status: 'complete',
+                category: 'income',
+                counterparty: {
+                  name: 'ACME Corp',
+                  type: 'organization'
+                }
               },
-              status: 'posted',
+              running_balance: null,
+              description: 'Salary Deposit',
+              id: 'txn_pf53ae2brofp6upddo003',
+              date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days ago
+              account_id: accountId,
+              links: {
+                account: `https://api.teller.io/accounts/${accountId}`,
+                self: `https://api.teller.io/accounts/${accountId}/transactions/txn_pf53ae2brofp6upddo003`
+              },
+              amount: '2500.00',
               type: 'deposit',
-              check_number: null,
-              reference_number: 'PAY202507',
-              posted_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              status: 'posted'
             }
           ];
           
@@ -561,6 +575,24 @@ class TellerService {
     }
   }
 
+  async shouldSetAsPrimary(userId, tellerAccountId) {
+    try {
+      // Check if user has any existing primary accounts
+      const { data: primaryAccounts } = await this.supabase
+        .from('accounts')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_primary', true)
+        .limit(1);
+
+      // If no primary accounts exist, set this as primary
+      return !primaryAccounts || primaryAccounts.length === 0;
+    } catch (error) {
+      console.warn('⚠️ Could not check primary account status:', error.message);
+      return false; // Default to false if we can't check
+    }
+  }
+
   async syncSingleAccount(userId, tellerAccount, enrollmentId, accessToken) {
     if (!this.supabase) throw new Error('Supabase client is not initialized');
     try {
@@ -575,20 +607,18 @@ class TellerService {
         user_id: userId,
         name: tellerAccount.name || `${tellerAccount.institution?.name || 'Unknown'} Account`,
         type: tellerAccount.type || 'other',
-        subtype: tellerAccount.subtype || null,
-        status: tellerAccount.status || 'open',
         institution: tellerAccount.institution?.name || 'Unknown Institution',
         account_number: tellerAccount.last_four ? `****${tellerAccount.last_four}` : null,
         routing_number: tellerAccount.routing_numbers?.[0] || null,
-        balance: 0, // Balances need separate API call
-        available_balance: 0, // Balances need separate API call
+        balance: 0, // Will be updated with balance API call below
+        available_balance: 0, // Will be updated with balance API call below
         currency: tellerAccount.currency || 'USD',
         teller_account_id: tellerAccount.id,
         teller_institution_id: tellerAccount.institution?.id || null,
-        teller_enrollment_id: tellerAccount.enrollment_id || enrollmentId,
-        teller_last_four: tellerAccount.last_four || null,
+        teller_enrollment_id: enrollmentId, // Add the enrollment ID to the account data
         sync_status: 'success',
-        is_active: tellerAccount.status === 'open',
+        is_active: tellerAccount.status === 'open' ? true : false, // Use actual status from Teller
+        is_primary: await this.shouldSetAsPrimary(userId, tellerAccount.id), // Set first account as primary
         last_sync: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -752,15 +782,15 @@ class TellerService {
         type: this.mapTellerTransactionType(tellerTransaction.type, tellerTransaction.amount),
         description: tellerTransaction.description || 'Unknown Transaction',
         date: tellerTransaction.date,
-        posted_date: tellerTransaction.posted_date || tellerTransaction.date,
+        posted_date: tellerTransaction.date, // Teller doesn't separate posted_date, use same as date
         teller_transaction_id: tellerTransaction.id,
-        teller_category: tellerTransaction.category || null,
-        teller_merchant: tellerTransaction.merchant?.name || null,
-        teller_location: tellerTransaction.merchant?.location || null,
+        teller_category: tellerTransaction.details?.category || null,
+        teller_merchant: tellerTransaction.details?.counterparty?.name || null,
+        teller_location: null, // Not provided in Teller API
         status: this.mapTellerTransactionStatus(tellerTransaction.status),
         is_verified: tellerTransaction.status === 'posted',
-        check_number: tellerTransaction.check_number || null,
-        reference_number: tellerTransaction.reference_number || null,
+        check_number: null, // Not provided in standard Teller API
+        reference_number: null, // Not provided in standard Teller API
         updated_at: new Date().toISOString()
       };
 
@@ -835,11 +865,20 @@ class TellerService {
     try {
       console.log(`🔄 Starting full sync for enrollment ${enrollmentId}`);
       
-      // Find all accounts for this enrollment
+      // Find all accounts for this enrollment - get from teller_enrollments table first
+      const { data: enrollment, error: enrollmentError } = await this.supabase
+        .from('teller_enrollments')
+        .select('user_id')
+        .eq('enrollment_id', enrollmentId)
+        .single();
+
+      if (enrollmentError) throw enrollmentError;
+      
+      // Find all accounts for this user
       const { data: accounts, error } = await this.supabase
         .from('accounts')
         .select('id, user_id, teller_account_id')
-        .eq('teller_enrollment_id', enrollmentId);
+        .eq('user_id', enrollment.user_id);
 
       if (error) throw error;
 
@@ -852,7 +891,7 @@ class TellerService {
 
       // Sync accounts first
       const accountSyncResult = await this.syncAccountsForUser(
-        accounts[0].user_id, 
+        enrollment.user_id, 
         accessToken, 
         enrollmentId
       );

@@ -57,6 +57,18 @@ router.get('/connect-config', tellerController.getConnectConfig);
 router.get('/nonce', tellerController.generateNonce);
 
 /**
+ * POST /api/teller/sync
+ * Manually trigger sync for the current user's accounts and transactions
+ */
+router.post('/sync', tellerController.triggerUserSync);
+
+/**
+ * GET /api/teller/sync-service-status
+ * Get background sync service status
+ */
+router.get('/sync-service-status', tellerController.getSyncServiceStatus);
+
+/**
  * Health check endpoint
  */
 router.get('/health', (req, res) => {

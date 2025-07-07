@@ -455,3 +455,290 @@ TypeError: fetch failed
     }
   ]
 }
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: read ECONNRESET
+      at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20) {
+    errno: -54,
+    code: 'ECONNRESET',
+    syscall: 'read'
+  }
+}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+node:internal/modules/cjs/loader:1404
+  throw err;
+  ^
+
+Error: Cannot find module './chatMessageSchema'
+Require stack:
+- /Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/app.js
+- /Users/suhaibaden/Documents/cofund_app/backend/index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js:8:27)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/app.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/index.js'
+  ]
+}
+
+Node.js v22.16.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+node:internal/modules/cjs/loader:1404
+  throw err;
+  ^
+
+Error: Cannot find module './chatSessionSchema'
+Require stack:
+- /Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/app.js
+- /Users/suhaibaden/Documents/cofund_app/backend/index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js:7:27)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/app.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/index.js'
+  ]
+}
+
+Node.js v22.16.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+node:internal/modules/cjs/loader:1404
+  throw err;
+  ^
+
+Error: Cannot find module './chatMessageSchema'
+Require stack:
+- /Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/app.js
+- /Users/suhaibaden/Documents/cofund_app/backend/index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js:8:27)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/app.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/index.js'
+  ]
+}
+
+Node.js v22.16.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+/Users/suhaibaden/Documents/cofund_app/backend/node_modules/router/lib/route.js:228
+        throw new TypeError('argument handler must be a function')
+        ^
+
+TypeError: argument handler must be a function
+    at Route.<computed> [as post] (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/router/lib/route.js:228:15)
+    at Router.<computed> [as post] (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/router/index.js:448:19)
+    at Object.<anonymous> (/Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js:137:8)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+    at Object..js (node:internal/modules/cjs/loader:1895:10)
+    at Module.load (node:internal/modules/cjs/loader:1465:32)
+    at Function._load (node:internal/modules/cjs/loader:1282:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+
+Node.js v22.16.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m

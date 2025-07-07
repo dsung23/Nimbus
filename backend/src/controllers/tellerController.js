@@ -88,18 +88,98 @@ class TellerController {
         });
       }
 
-      // Step 3: Sync accounts and transactions
-      const syncResult = await tellerService.syncAccountsForUser(
+      // Step 3: Sync accounts first
+      const accountSyncResult = await tellerService.syncAccountsForUser(
         userId, 
         enrollment.accessToken,
         enrollmentId
       );
 
+      // Step 4: Sync transactions for all synced accounts
+      let transactionSyncResults = {
+        total_accounts: 0,
+        total_transactions: 0,
+        errors: []
+      };
+
+      try {
+        // Get accounts that were just synced for this enrollment
+        const { data: syncedAccounts } = await getClient()
+          .from('accounts')
+          .select('id, teller_account_id')
+          .eq('user_id', userId)
+          .eq('teller_enrollment_id', enrollmentId);
+
+        if (syncedAccounts && syncedAccounts.length > 0) {
+          console.log(`🔄 Starting transaction and balance sync for ${syncedAccounts.length} accounts`);
+          
+          for (const account of syncedAccounts) {
+            try {
+              // Sync transactions
+              const transactionResult = await tellerService.syncTransactionsForAccount(
+                account.id,
+                enrollment.accessToken,
+                account.teller_account_id
+              );
+
+              transactionSyncResults.total_accounts++;
+              transactionSyncResults.total_transactions += transactionResult.created + transactionResult.updated;
+
+              // Sync account balance
+              try {
+                const balanceData = await tellerService.getAccountBalance(
+                  enrollment.accessToken,
+                  account.teller_account_id
+                );
+
+                // Update account balance in database
+                await getClient()
+                  .from('accounts')
+                  .update({
+                    balance: balanceData.current_balance,
+                    available_balance: balanceData.available_balance,
+                    last_sync: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', account.id);
+
+                console.log(`💰 Updated balance for account ${account.id}: $${balanceData.current_balance}`);
+              } catch (balanceError) {
+                console.warn(`⚠️ Could not fetch balance for account ${account.id}:`, balanceError.message);
+                transactionSyncResults.errors.push({
+                  account_id: account.id,
+                  type: 'balance_sync',
+                  error: balanceError.message
+                });
+              }
+            } catch (transactionError) {
+              console.error(`❌ Error syncing transactions for account ${account.id}:`, transactionError);
+              transactionSyncResults.errors.push({
+                account_id: account.id,
+                type: 'transaction_sync',
+                error: transactionError.message
+              });
+            }
+          }
+        }
+      } catch (transactionSyncError) {
+        console.error('❌ Error during transaction sync phase:', transactionSyncError);
+        transactionSyncResults.errors.push({
+          type: 'general',
+          error: transactionSyncError.message
+        });
+      }
+
+      console.log(`✅ Enrollment sync completed: ${accountSyncResult.created + accountSyncResult.updated} accounts, ${transactionSyncResults.total_transactions} transactions`);
+
       res.json({
         success: true,
         message: 'Account connected and synced successfully',
         enrollment_id: enrollmentId,
-        sync_results: syncResult,
+        sync_results: {
+          accounts: accountSyncResult,
+          transactions: transactionSyncResults
+        },
         timestamp: new Date().toISOString()
       });
 
@@ -669,6 +749,56 @@ class TellerController {
       console.error('❌ Error generating nonce:', error);
       res.status(500).json({
         error: 'Failed to generate nonce',
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Manually trigger sync for the current user
+   */
+  async triggerUserSync(req, res) {
+    try {
+      const userId = req.user.id;
+      const syncService = require('../services/syncService');
+
+      console.log(`🔄 Manual sync triggered for user ${userId}`);
+      
+      const result = await syncService.syncUser(userId);
+
+      res.json({
+        success: true,
+        message: 'User sync completed successfully',
+        sync_results: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error in triggerUserSync:', error);
+      res.status(500).json({
+        error: 'Failed to trigger user sync',
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Get background sync service status
+   */
+  async getSyncServiceStatus(req, res) {
+    try {
+      const syncService = require('../services/syncService');
+      const status = syncService.getStatus();
+
+      res.json({
+        success: true,
+        sync_service: status
+      });
+
+    } catch (error) {
+      console.error('❌ Error in getSyncServiceStatus:', error);
+      res.status(500).json({
+        error: 'Failed to get sync service status',
         message: error.message
       });
     }
