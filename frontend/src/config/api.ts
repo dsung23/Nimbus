@@ -2,6 +2,7 @@ export const API_CONFIG = {
   BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3789',
   AUTH_ENDPOINT: '/api/auth',
   TELLER_ENDPOINT: '/api/teller',
+  CHAT_ENDPOINT: '/api/chat',
 } as const;
 
 export const API_ENDPOINTS = {
@@ -17,5 +18,7 @@ export const API_ENDPOINTS = {
     CONNECT_CONFIG: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/connect-config`,
     SYNC_STATUS: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/sync-status`,
     NONCE: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/nonce`,
+  CHAT: {
+    SESSIONS: `${API_CONFIG.BASE_URL}${API_CONFIG.CHAT_ENDPOINT}/sessions`,
   },
 } as const; 

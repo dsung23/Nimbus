@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components/native';
 import { Message } from '../types/message';
 import { LoadingAnimation } from './LoadingAnimation';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const MessageWrapper = styled.View<{ isFromUser: boolean }>`
   flex-direction: row;
@@ -12,8 +13,8 @@ const MessageWrapper = styled.View<{ isFromUser: boolean }>`
 
 const MessageBubble = styled.View<{ isFromUser: boolean; isError?: boolean }>`
   max-width: 80%;
-  padding: 16px;
   border-radius: 20px;
+  overflow: hidden;
   ${props => {
     if (props.isError) {
       return `
@@ -23,11 +24,9 @@ const MessageBubble = styled.View<{ isFromUser: boolean; isError?: boolean }>`
       `;
     }
     if (props.isFromUser) {
-      // Solid iMessage blue, no border
+      // Remove background-color as gradient will handle it
       return `
         border-top-right-radius: 6px;
-        background-color: rgba(0,122,255,0.85);
-        backdrop-filter: blur(10px);
       `;
     }
     // AI bubble (if any left)
@@ -36,8 +35,17 @@ const MessageBubble = styled.View<{ isFromUser: boolean; isError?: boolean }>`
       background-color: rgba(138, 43, 226, 0.15);
       border: 2px solid rgba(138, 43, 226, 0.3);
       backdrop-filter: blur(10px);
+      font-weight: bold;
     `;
   }}
+`;
+
+const GradientWrapper = styled(LinearGradient)`
+  padding: 16px;
+`;
+
+const RegularBubbleContent = styled.View`
+  padding: 16px;
 `;
 
 const MessageText = styled.Text`
@@ -53,13 +61,20 @@ const MessageTime = styled.Text<{ isFromUser: boolean }>`
   ${props => props.isFromUser ? 'text-align: right;' : 'text-align: left;'}
 `;
 
-export const MessageComponent: React.FC<{ message: Message }> = ({ message }) => {
+interface MessageComponentProps {
+  message: Message;
+  isTyping?: boolean;
+}
+
+export const MessageComponent: React.FC<MessageComponentProps> = ({ message, isTyping }) => {
   // No timestamp rendering for any message
   if (!message.isFromUser && !message.isError) {
     // AI message: plain text, no bubble, keep margin/padding
     return (
       <MessageWrapper isFromUser={false}>
-        <MessageText style={{ padding: 16, maxWidth: '80%' }}>{message.text}</MessageText>
+        <MessageText style={{ padding: 16, maxWidth: '80%' }}>
+          {message.text}
+        </MessageText>
       </MessageWrapper>
     );
   }
@@ -67,7 +82,19 @@ export const MessageComponent: React.FC<{ message: Message }> = ({ message }) =>
   return (
     <MessageWrapper isFromUser={message.isFromUser}>
       <MessageBubble isFromUser={message.isFromUser} isError={message.isError}>
-        {message.id === 'loading' ? <LoadingAnimation /> : <MessageText>{message.text}</MessageText>}
+        {message.isFromUser ? (
+          <GradientWrapper
+            colors={['#007AFF', '#5856D6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <MessageText>{message.text}</MessageText>
+          </GradientWrapper>
+        ) : (
+          <RegularBubbleContent>
+            {message.id === 'loading' ? <LoadingAnimation /> : <MessageText>{message.text}</MessageText>}
+          </RegularBubbleContent>
+        )}
       </MessageBubble>
     </MessageWrapper>
   );
