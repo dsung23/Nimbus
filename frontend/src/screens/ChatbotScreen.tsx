@@ -1,10 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, TextInput, Animated, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, TextInput, Animated, Keyboard, TouchableWithoutFeedback, View, Dimensions } from 'react-native';
 import styled from 'styled-components/native';
 import { Background } from '../components/Background';
 import { MessageComponent } from '../components/MessageComponent';
 import { useChat } from '../hooks/useChat';
 import { Ionicons } from '@expo/vector-icons';
+import { ChatErrorBoundary } from '../components/ChatErrorBoundary';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 const Container = styled.View`
   flex: 1;
@@ -27,9 +30,7 @@ const HeaderTitle = styled.Text`
 `;
 
 const MessagesContainer = styled(ScrollView)`
-  flex: 1;
   padding: 0 16px;
-  
 `;
 
 const InputContainer = styled.View<{ isKeyboardVisible: boolean }>`
@@ -71,6 +72,23 @@ const SendButton = styled(TouchableOpacity)<{ disabled: boolean }>`
   border-width: 0;
 `;
 
+const ScrollToBottomButton = styled(Animated.createAnimatedComponent(TouchableOpacity))`
+  position: absolute;
+  bottom: 15px;
+  align-self: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background-color: rgba(255, 255, 255, 0.95);
+  justify-content: center;
+  align-items: center;
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.25;
+  shadow-radius: 4px;
+  elevation: 5;
+`;
+
 const TypingIndicator = styled.View`
   flex-direction: row;
   align-items: center;
@@ -109,28 +127,36 @@ const FloatingTypingIndicator: React.FC = () => {
   const dot1Anim = useRef(new Animated.Value(0)).current;
   const dot2Anim = useRef(new Animated.Value(0)).current;
   const dot3Anim = useRef(new Animated.Value(0)).current;
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   React.useEffect(() => {
-    const animate = () => {
-      Animated.loop(
-        Animated.stagger(150, [
-          Animated.sequence([
-            Animated.timing(dot1Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
-            Animated.timing(dot1Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
-          ]),
-          Animated.sequence([
-            Animated.timing(dot2Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
-            Animated.timing(dot2Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
-          ]),
-          Animated.sequence([
-            Animated.timing(dot3Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
-            Animated.timing(dot3Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
-          ]),
-        ])
-      ).start();
+    animationRef.current = Animated.loop(
+      Animated.stagger(150, [
+        Animated.sequence([
+          Animated.timing(dot1Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
+          Animated.timing(dot1Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
+        ]),
+        Animated.sequence([
+          Animated.timing(dot2Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
+          Animated.timing(dot2Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
+        ]),
+        Animated.sequence([
+          Animated.timing(dot3Anim, { toValue: -8, duration: 350, useNativeDriver: true }),
+          Animated.timing(dot3Anim, { toValue: 0, duration: 350, useNativeDriver: true }),
+        ]),
+      ])
+    );
+    
+    animationRef.current.start();
+
+    // Cleanup function to stop animation on unmount
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.stop();
+        animationRef.current = null;
+      }
     };
-    animate();
-  }, []);
+  }, [dot1Anim, dot2Anim, dot3Anim]);
 
   return (
     <FloatingTypingIndicatorContainer>
@@ -143,10 +169,50 @@ const FloatingTypingIndicator: React.FC = () => {
   );
 };
 
+const PortalOverlay = styled(Animated.View)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+`;
+
+const PortalGlow = styled(LinearGradient)`
+  position: absolute;
+  width: ${Dimensions.get('window').width * 1.5}px;
+  height: ${Dimensions.get('window').height * 1.5}px;
+  border-radius: ${Math.max(Dimensions.get('window').width, Dimensions.get('window').height)}px;
+  opacity: 0.8;
+  shadow-color: #cf30aa;
+  shadow-offset: 0px 0px;
+  shadow-opacity: 0.8;
+  shadow-radius: 20px;
+  elevation: 10;
+`;
+
+const PortalBlur = styled(BlurView)`
+  position: absolute;
+  width: ${Dimensions.get('window').width * 1.5}px;
+  height: ${Dimensions.get('window').height * 1.5}px;
+  border-radius: ${Math.max(Dimensions.get('window').width, Dimensions.get('window').height)}px;
+  opacity: 0.7;
+`;
+
 export const ChatbotScreen: React.FC = () => {
   const scrollViewRef = useRef<ScrollView>(null);
-  const { messages, inputText, setInputText, isLoading, sendMessage } = useChat(scrollViewRef);
+  const { messages, inputText, setInputText, isLoading, sendMessage, typingMessageId } = useChat(scrollViewRef);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const scrollButtonOpacity = useRef(new Animated.Value(0)).current;
+
+  // Portal animation state
+  const [showPortal, setShowPortal] = useState(true);
+  const portalScale = useRef(new Animated.Value(0.1)).current;
+  const portalOpacity = useRef(new Animated.Value(1)).current;
+  const portalRotation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', () => {
@@ -162,10 +228,83 @@ export const ChatbotScreen: React.FC = () => {
     };
   }, []);
 
+  // Animate scroll button visibility
+  useEffect(() => {
+    Animated.timing(scrollButtonOpacity, {
+      toValue: showScrollButton ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [showScrollButton]);
+
+  useEffect(() => {
+    if (showPortal) {
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(portalScale, {
+            toValue: 1.5,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(portalRotation, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(portalOpacity, {
+            toValue: 0,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(portalScale, {
+            toValue: 3,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => setShowPortal(false));
+    }
+  }, [showPortal]);
+
+  const handleScroll = (event: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const isAtBottom = contentOffset.y >= contentSize.height - layoutMeasurement.height - 60;
+    setShowScrollButton(!isAtBottom);
+  };
+
+  const scrollToBottom = () => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
+
   return (
     <Background>
-      <Container>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <ChatErrorBoundary>
+        <Container>
+          {showPortal && (
+            <PortalOverlay
+              style={{
+                opacity: portalOpacity,
+                transform: [
+                  { scale: portalScale },
+                  { rotate: portalRotation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg']
+                  })}
+                ],
+              }}
+              pointerEvents="none"
+            >
+              <PortalGlow
+                colors={["#cf30aa", "#764ba2", "#18116a", "#cf30aa", "#ff6b9d", "#cf30aa"]}
+                start={{ x: 0.1, y: 0.1 }}
+                end={{ x: 0.9, y: 0.9 }}
+                locations={[0, 0.2, 0.4, 0.6, 0.8, 1]}
+              />
+              <PortalBlur intensity={60} tint="dark" />
+            </PortalOverlay>
+          )}
           <KeyboardAvoidingView 
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -175,21 +314,32 @@ export const ChatbotScreen: React.FC = () => {
               <HeaderTitle>Nimbus AI</HeaderTitle>
             </Header>
 
-            <MessagesContainer
-              ref={scrollViewRef}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingVertical: 16, paddingBottom: 20 }}
-              keyboardShouldPersistTaps="handled"
-            >
-              {messages.map((message) => (
-                <MessageComponent key={message.id} message={message} />
-              ))}
-              {isLoading && (
-                <MessageComponent 
-                  message={{ id: 'loading', isFromUser: false, text: '', timestamp: new Date() }} 
-                />
-              )}
-            </MessagesContainer>
+            <View style={{ flex: 1 }}>
+              <MessagesContainer
+                ref={scrollViewRef}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingVertical: 16, paddingBottom: 20 }}
+                keyboardShouldPersistTaps="handled"
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+              >
+                {messages.map((message) => (
+                  <MessageComponent 
+                    key={message.id} 
+                    message={message} 
+                    isTyping={message.id === typingMessageId}
+                  />
+                ))}
+              </MessagesContainer>
+              
+              <ScrollToBottomButton
+                style={{ opacity: scrollButtonOpacity }}
+                onPress={scrollToBottom}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="chevron-down" size={24} color="#000000" />
+              </ScrollToBottomButton>
+            </View>
 
             {isLoading && <FloatingTypingIndicator />}
 
@@ -204,22 +354,26 @@ export const ChatbotScreen: React.FC = () => {
                   textAlignVertical="top"
                   editable={true}
                   keyboardAppearance="dark"
+                  autoCorrect={true}
+                  autoCapitalize="sentences"
+                  spellCheck={true}
+                  textContentType="none"
                 />
               </InputWrapper>
               <SendButton 
-                disabled={!inputText.trim() || isLoading}
+                disabled={!inputText.trim() || isLoading || !!typingMessageId}
                 onPress={sendMessage}
               >
                 <Ionicons 
                   name="send" 
                   size={16} 
-                  color={!inputText.trim() || isLoading ? "rgba(255, 255, 255, 0.3)" : "#ffffff"} 
+                  color={!inputText.trim() || isLoading || !!typingMessageId ? "rgba(255, 255, 255, 0.3)" : "#ffffff"} 
                 />
               </SendButton>
             </InputContainer>
           </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
-      </Container>
+        </Container>
+      </ChatErrorBoundary>
     </Background>
   );
 }; 
