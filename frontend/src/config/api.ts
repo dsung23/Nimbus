@@ -1,7 +1,7 @@
 export const API_CONFIG = {
-  //localhost:3789
-  BASE_URL: 'http://192.168.1.7:3789',
+  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3789',
   AUTH_ENDPOINT: '/api/auth',
+  TELLER_ENDPOINT: '/api/teller',
   CHAT_ENDPOINT: '/api/chat',
 } as const;
 
@@ -12,6 +12,12 @@ export const API_ENDPOINTS = {
     PROFILE: `${API_CONFIG.BASE_URL}${API_CONFIG.AUTH_ENDPOINT}/profile`,
     CHANGE_PASSWORD: `${API_CONFIG.BASE_URL}${API_CONFIG.AUTH_ENDPOINT}/change-password`,
   },
+  TELLER: {
+    CONNECT: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/connect`,
+    ACCOUNTS: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/accounts`,
+    CONNECT_CONFIG: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/connect-config`,
+    SYNC_STATUS: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/sync-status`,
+    NONCE: `${API_CONFIG.BASE_URL}${API_CONFIG.TELLER_ENDPOINT}/nonce`,
   CHAT: {
     SESSIONS: `${API_CONFIG.BASE_URL}${API_CONFIG.CHAT_ENDPOINT}/sessions`,
   },

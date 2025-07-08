@@ -133,4 +133,11 @@ router.post('/refresh',
   userController.refreshToken
 );
 
+// Manual sync endpoint for authenticated users
+router.post('/sync', 
+  authenticateToken,
+  requireActiveAccount,
+  userController.syncUserData
+);
+
 module.exports = router; 

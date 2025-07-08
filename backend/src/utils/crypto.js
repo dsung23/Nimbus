@@ -3,11 +3,10 @@ const crypto = require('crypto');
 class CryptoService {
   constructor() {
     // Use environment variable for encryption key, fallback to a default for development
+    const secret = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
     this.algorithm = 'aes-256-gcm';
-    this.key = Buffer.from(
-      process.env.ENCRYPTION_KEY || 'default-key-change-in-production-32', 
-      'utf8'
-    ).slice(0, 32); // Ensure 32 bytes for AES-256
+    // Hash the secret to ensure a 32-byte key, which is required for aes-256-gcm.
+    this.key = crypto.createHash('sha256').update(String(secret)).digest();
   }
 
   /**
@@ -18,7 +17,7 @@ class CryptoService {
       if (!text) return null;
       
       const iv = crypto.randomBytes(16);
-      const cipher = crypto.createCipher(this.algorithm, this.key);
+      const cipher = crypto.createCipheriv(this.algorithm, this.key, iv);
       cipher.setAAD(Buffer.from('teller-token', 'utf8'));
       
       let encrypted = cipher.update(text, 'utf8', 'hex');
@@ -50,7 +49,7 @@ class CryptoService {
       const authTag = Buffer.from(parts[1], 'hex');
       const encrypted = parts[2];
       
-      const decipher = crypto.createDecipher(this.algorithm, this.key);
+      const decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
       decipher.setAAD(Buffer.from('teller-token', 'utf8'));
       decipher.setAuthTag(authTag);
       

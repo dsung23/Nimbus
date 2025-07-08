@@ -58,6 +58,7 @@ router.get('/version', (req, res) => {
   });
 });
 
+
 // Mount route modules
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
@@ -107,6 +108,7 @@ router.use((req, res) => {
 
 
 
+
 // Mount route modules
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
@@ -136,12 +138,13 @@ router.use((req, res) => {
       '/auth/profile',
       '/auth/refresh-token',
       '/auth/refresh',
+      '/auth/sync',
       '/admin/users',
       '/admin/system/stats',
       '/admin/analytics/users',
       '/teller/connect',
-      '/teller/link',
-      '/teller/exchange',
+      '/teller/connect-config',
+      '/teller/nonce',
       '/teller/accounts',
       '/teller/accounts/:accountId/transactions',
       '/teller/accounts/:accountId/sync',

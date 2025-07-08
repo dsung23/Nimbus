@@ -1,96 +1,176 @@
-import React, { useState } from 'react';
-import { ActivityIndicator, View, Text, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  TouchableOpacity,
+  Platform,
+  Alert,
+  SafeAreaView,
+} from 'react-native';
 import styled from 'styled-components/native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { WebView } from 'react-native-webview';
+
 import { AuthButton } from '../components/AuthButton';
 import { Background } from '../components/Background';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
-import { RouteProp } from '@react-navigation/native';
+import { getNonce, connectAccount, getConnectConfig } from '../api/tellerService';
+import { TellerSuccessPayload } from '../types/teller';
+import { useAuth } from '../contexts/AuthContext';
 
-// Placeholder interface for Teller enrollment
-export interface TellerEnrollment {
-  accessToken: string;
-  institution: { name: string };
-  account: { id: string };
-}
+// Get the App ID from environment variables or hardcode for now
+const TELLER_APP_ID = process.env.EXPO_PUBLIC_TELLER_APP_ID || 'app_pf53ae2brofp6upddo000';
+const TELLER_ENVIRONMENT = process.env.EXPO_PUBLIC_TELLER_ENVIRONMENT || 'sandbox';
 
-// Placeholder API function
-const sendEnrollmentToBackend = async (
-  enrollment: TellerEnrollment
-): Promise<{ success: boolean }> => {
-  console.log('Simulating API call to save enrollment to our backend...');
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  return { success: true };
+/**
+ * Generates the HTML and JavaScript for the Teller Connect WebView.
+ * This function creates a self-contained HTML document that initializes
+ * and opens Teller Connect immediately upon loading.
+ */
+const generateTellerHtml = (nonce: string) => {
+  const config = {
+    applicationId: TELLER_APP_ID,
+    environment: TELLER_ENVIRONMENT,
+    products: ['transactions', 'balance', 'identity'],
+    selectAccount: 'multiple',
+    nonce: nonce,
+  };
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.teller.io/connect/connect.js"></script>
+        <style>
+          body { margin: 0; padding: 0; background-color: #111827; }
+        </style>
+      </head>
+      <body>
+        <script>
+          try {
+            const tellerConnect = TellerConnect.setup({
+              ...${JSON.stringify(config)},
+              onSuccess: function(enrollment) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'success', payload: enrollment }));
+              },
+              onExit: function() {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'exit' }));
+              },
+              onFailure: function(failure) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'failure', payload: failure }));
+              }
+            });
+            tellerConnect.open();
+          } catch (e) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ event: 'error', payload: { message: e.message } }));
+          }
+        </script>
+      </body>
+    </html>
+  `;
 };
 
-// Placeholder Teller Connect component
-const TellerConnectPlaceholder: React.FC<{
-  onSuccess: (enrollment: TellerEnrollment) => void;
-  onExit: () => void;
-}> = ({ onSuccess, onExit }) => {
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      onSuccess({
-        accessToken: 'fake-access-token',
-        institution: { name: 'Demo Bank' },
-        account: { id: 'account-123' },
-      });
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [onSuccess]);
-
-  return (
-    <ModalOverlay>
-      <ModalContent>
-        <Ionicons name="shield-checkmark" size={48} color="#4fd1c5" style={{ marginBottom: 16 }} />
-        <ModalTitle>Connecting to Teller...</ModalTitle>
-        <ActivityIndicator size="large" color="#4fd1c5" style={{ marginVertical: 16 }} />
-        <ModalText>This is a placeholder for the Teller Connect flow.</ModalText>
-        <ModalButton onPress={onExit}>
-          <ModalButtonText>Cancel</ModalButtonText>
-        </ModalButton>
-      </ModalContent>
-    </ModalOverlay>
-  );
-};
 
 type TellerConnectScreenRouteProp = RouteProp<AuthStackParamList, 'TellerConnect'>;
 
 export const TellerConnectScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const route = useRoute<TellerConnectScreenRouteProp>();
+  const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showTellerConnect, setShowTellerConnect] = useState(false);
+  const [showTellerModal, setShowTellerModal] = useState(false);
+  const [tellerHtml, setTellerHtml] = useState<string | null>(null);
+  const [nonce, setNonce] = useState<string | null>(null);
 
-  const handleTellerSuccess = async (enrollment: TellerEnrollment) => {
-    console.log('Successfully received enrollment from Teller:', enrollment);
+  const webviewRef = useRef<WebView>(null);
+
+  const handleConnectPress = async () => {
     setIsLoading(true);
     try {
-      await sendEnrollmentToBackend(enrollment);
-      // Call the onSuccess callback if it exists
-      if (route.params?.onSuccess) {
-        await route.params.onSuccess();
-      } else {
-        // Fallback to resetting navigation if no callback is provided
-        navigation.reset({ index: 0, routes: [{ name: 'Main' as never }] });
-      }
+      // 1. Fetch a secure nonce from the backend
+      const { nonce: fetchedNonce } = await getNonce();
+      
+      // 2. Store it in state and generate the HTML
+      setNonce(fetchedNonce);
+      const html = generateTellerHtml(fetchedNonce);
+      setTellerHtml(html);
+
+      // 3. Open the WebView modal
+      setShowTellerModal(true);
     } catch (error) {
-      // Handle backend error (show alert, etc.)
-      setShowTellerConnect(false);
+      console.error("Failed to start Teller Connect flow:", error);
+      Alert.alert("Error", "Could not start the connection process. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleTellerSuccess = async (payload: TellerSuccessPayload) => {
+    setShowTellerModal(false);
+    setIsLoading(true);
+    try {
+      // Send the enrollment data and nonce to our backend
+      await connectAccount(payload, nonce);
+      
+      // Call the onSuccess callback if provided (from signup flow)
+      if (route.params?.onSuccess) {
+        await route.params.onSuccess();
+      } else {
+        // If no callback provided, just go back
+        const canGoBack = navigation.canGoBack();
+        if (canGoBack) {
+          navigation.goBack();
+        }
+      }
+    } catch (error: any) {
+      console.error("Failed to connect account on backend:", error);
+      Alert.alert(
+        "Connection Failed", 
+        error.message || "An unknown error occurred while saving your connection."
+      );
+      setIsLoading(false);
+    }
+  };
+
+  const handleWebViewMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      switch (data.event) {
+        case 'success':
+          handleTellerSuccess(data.payload);
+          break;
+        case 'exit':
+          setShowTellerModal(false);
+          break;
+        case 'failure':
+          console.error('Teller Connect Failure:', data.payload);
+          Alert.alert('Connection Failed', data.payload.message || 'An unknown error occurred in the connection flow.');
+          setShowTellerModal(false);
+          break;
+        case 'error':
+          console.error('Teller Connect Error:', data.payload);
+          Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+          setShowTellerModal(false);
+          break;
+      }
+    } catch (e) {
+      console.error('Failed to parse message from WebView', e);
+    }
+  };
+
   const handleSkip = async () => {
-    // Also call onSuccess on skip to ensure sign-in
+    // Call the onSuccess callback if provided (from signup flow)
     if (route.params?.onSuccess) {
       await route.params.onSuccess();
     } else {
-      navigation.reset({ index: 0, routes: [{ name: 'Main' as never }] });
+      // If no callback provided, just go back
+      const canGoBack = navigation.canGoBack();
+      if (canGoBack) {
+        navigation.goBack();
+      }
     }
   };
 
@@ -103,31 +183,63 @@ export const TellerConnectScreen: React.FC = () => {
           </IconCircle>
           <HeaderTitle>Connect Your Bank</HeaderTitle>
           <BodyText>
-            See your full financial picture, track spending, and get personalized insights by securely linking your bank account.
+            Securely link your bank account to see your full financial picture, track spending, and get personalized insights.
           </BodyText>
           <AuthButton
             title={isLoading ? 'Connecting...' : 'Connect Account'}
             variant="primary"
-            onPress={() => {
-              if (!isLoading) setShowTellerConnect(true);
-            }}
+            onPress={handleConnectPress}
+            disabled={isLoading}
           />
           <SkipLink disabled={isLoading} onPress={handleSkip}>
             <SkipLinkText>Skip for Now</SkipLinkText>
           </SkipLink>
         </BlurCard>
-        {showTellerConnect && (
-          <TellerConnectPlaceholder
-            onSuccess={handleTellerSuccess}
-            onExit={() => setShowTellerConnect(false)}
-          />
-        )}
+        
+        <Modal
+          visible={showTellerModal}
+          animationType="slide"
+          onRequestClose={() => setShowTellerModal(false)}
+        >
+          <ModalContainer>
+            <ModalHeader>
+              <CloseButton onPress={() => setShowTellerModal(false)}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </CloseButton>
+            </ModalHeader>
+            {tellerHtml ? (
+              <WebView
+                ref={webviewRef}
+                source={{ html: tellerHtml, baseUrl: 'https://teller.io' }}
+                onMessage={handleWebViewMessage}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                sharedCookiesEnabled={true} // iOS
+                thirdPartyCookiesEnabled={true} // Android
+                originWhitelist={['https://*']}
+                setSupportMultipleWindows={false}
+                androidLayerType="hardware"
+                userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1"
+                style={{ flex: 1, backgroundColor: '#111827' }}
+                startInLoadingState={true}
+                renderLoading={() => <LoadingIndicator />}
+              />
+            ) : <LoadingIndicator />}
+          </ModalContainer>
+        </Modal>
       </Container>
     </Background>
   );
 };
 
-// Styled Components
+// --- Styled Components ---
+
+const LoadingIndicator = () => (
+  <LoadingOverlay>
+    <ActivityIndicator size="large" color="#4fd1c5" />
+  </LoadingOverlay>
+);
+
 const Container = styled.View`
   flex: 1;
   justify-content: center;
@@ -178,51 +290,30 @@ const SkipLinkText = styled.Text`
   color: #4fd1c5;
   font-size: 16px;
   text-align: center;
-  text-decoration: underline;
 `;
 
-// Modal Placeholder Styles
-const ModalOverlay = styled.View`
+// Modal Styles
+const ModalContainer = styled(SafeAreaView)`
+  flex: 1;
+  background-color: #111827;
+`;
+
+const ModalHeader = styled.View`
+  height: 56px;
+  justify-content: center;
+  align-items: flex-end;
+  padding-right: 16px;
+`;
+
+const CloseButton = styled(TouchableOpacity)`
+  padding: 8px;
+`;
+
+const LoadingOverlay = styled.View`
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(0,0,0,0.45);
+  background-color: #111827;
   justify-content: center;
   align-items: center;
   z-index: 10;
-`;
-
-const ModalContent = styled.View`
-  background-color: #1a1a1a;
-  border-radius: 20px;
-  padding: 32px 24px;
-  align-items: center;
-  width: 90%;
-  max-width: 340px;
-`;
-
-const ModalTitle = styled.Text`
-  font-size: 20px;
-  font-weight: bold;
-  color: #fff;
-  margin-bottom: 8px;
-`;
-
-const ModalText = styled.Text`
-  color: rgba(255,255,255,0.8);
-  font-size: 15px;
-  text-align: center;
-  margin-bottom: 16px;
-`;
-
-const ModalButton = styled.TouchableOpacity`
-  margin-top: 8px;
-  padding: 12px 24px;
-  border-radius: 12px;
-  background-color: rgba(255,255,255,0.08);
-`;
-
-const ModalButtonText = styled.Text`
-  color: #4fd1c5;
-  font-size: 16px;
-  font-weight: 500;
 `; 

@@ -57,6 +57,14 @@ export const signInWithEmail = async (
     console.log('Backend login response:', data);
 
     if (!response.ok || !data.success) {
+      // Handle backend validation errors
+      if (data.errors && Array.isArray(data.errors)) {
+        // Backend returned field-specific validation errors
+        const errorMessages = data.errors.map((err: any) => `${err.field}: ${err.message}`).join(', ');
+        return { user: null, error: { message: `Validation failed: ${errorMessages}` } };
+      }
+      
+      // Handle other backend errors
       return { user: null, error: { message: data.message || 'Login failed.' } };
     }
 
@@ -71,8 +79,8 @@ export const signInWithEmail = async (
       email: rawUser?.email || '',
       phone: rawUser?.phone || '',
       date_of_birth: rawUser?.date_of_birth || '',
-      profileImageUrl: rawUser?.profileImageUrl || '',
-      memberSince: rawUser?.memberSince || '',
+      is_active: rawUser?.is_active,
+      created_at: rawUser?.created_at,
     };
 
     return { user: mappedUser, error: null };
@@ -112,15 +120,42 @@ export const signUpWithEmail = async (
     console.log('Backend register response:', data);
 
     if (!response.ok || !data.success) {
+      // Handle backend validation errors
+      if (data.errors && Array.isArray(data.errors)) {
+        // Backend returned field-specific validation errors
+        const errorMessages = data.errors.map((err: any) => `${err.field}: ${err.message}`).join(', ');
+        return {
+          user: null,
+          error: { message: `Validation failed: ${errorMessages}` },
+        };
+      }
+      
+      // Handle other backend errors
       return {
         user: null,
         error: { message: data.message || 'Registration failed.' },
       };
     }
 
-    await storeTokens(data.auth?.access_token, data.auth?.refresh_token);
-    // The user object from the API should conform to our User type.
-    return { user: data.user, error: null };
+    // Store tokens if available in the auth object
+    if (data.auth?.session?.access_token) {
+      await storeTokens(data.auth.session.access_token, data.auth.session.refresh_token);
+    }
+
+    // Map the backend user object to our User type
+    const rawUser = data.user;
+    const mappedUser: User = {
+      id: rawUser?.id || '',
+      first_name: rawUser?.first_name || '',
+      last_name: rawUser?.last_name || '',
+      email: rawUser?.email || '',
+      phone: rawUser?.phone || '',
+      date_of_birth: rawUser?.date_of_birth || '',
+      is_active: rawUser?.is_active,
+      created_at: rawUser?.created_at,
+    };
+
+    return { user: mappedUser, error: null };
   } catch (error) {
     console.error('Sign-up error:', error);
     return { user: null, error: { message: 'A network error occurred.' } };

@@ -45,17 +45,28 @@ router.delete('/accounts/:accountId', tellerController.disconnectAccount);
 router.get('/sync-status', tellerController.getSyncStatus);
 
 /**
- * GET /api/teller/link
- * Create a Teller Connect link for the authenticated user
+ * GET /api/teller/connect-config
+ * Get Teller Connect configuration for the authenticated user
  */
-router.get('/link', tellerController.createConnectLink);
+router.get('/connect-config', tellerController.getConnectConfig);
 
 /**
- * POST /api/teller/exchange
- * Exchange a public token for an access token
+ * GET /api/teller/nonce
+ * Generate a secure nonce for Teller Connect
  */
-// TODO: Add validation middleware for /exchange endpoint if not present
-router.post('/exchange', /* validate(tellerExchangeSchema), */ tellerController.exchangeToken);
+router.get('/nonce', tellerController.generateNonce);
+
+/**
+ * POST /api/teller/sync
+ * Manually trigger sync for the current user's accounts and transactions
+ */
+router.post('/sync', tellerController.triggerUserSync);
+
+/**
+ * GET /api/teller/sync-service-status
+ * Get background sync service status
+ */
+router.get('/sync-service-status', tellerController.getSyncServiceStatus);
 
 /**
  * Health check endpoint
