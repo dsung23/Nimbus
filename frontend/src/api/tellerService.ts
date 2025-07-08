@@ -6,7 +6,7 @@ import {
   TellerConnectLinkResponse,
   TellerAccountsResponse,
   TellerSyncStatusResponse,
-  TellerConnectEnrollment,
+  TellerSuccessPayload,
   TellerNonceResponse,
 } from '../types/teller';
 
@@ -109,13 +109,15 @@ export const getConnectConfig = async (): Promise<TellerConnectLinkResponse> => 
  * POST /api/teller/connect
  */
 export const connectAccount = async (
-  enrollment: TellerConnectEnrollment
+  payload: TellerSuccessPayload,
+  nonce: string | null
 ): Promise<TellerConnectResponse> => {
   try {
     const headers = await getAuthHeaders();
     
     const requestData: TellerConnectRequest = {
-      enrollment,
+      enrollment: payload,
+      nonce: nonce || undefined,
     };
     
     const response = await fetch(API_ENDPOINTS.TELLER.CONNECT, {

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types/user';
 
 interface AuthContextType {
@@ -23,10 +24,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        // In a real app, you would check for an existing session
-        // e.g., const session = await supabase.auth.getSession();
-        
-        // For now, we'll simulate checking for a stored session
+        // Check for stored user data
         const storedUser = await getStoredUser();
         if (storedUser) {
           setUser(storedUser);
@@ -43,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (userData: User) => {
     try {
-      // Store user data (in a real app, you'd store the session)
+      // Store user data
       await storeUser(userData);
       setUser(userData);
     } catch (error) {
@@ -54,7 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
-      // Clear stored user data (in a real app, you'd sign out from Supabase)
+      // Clear stored user data
       await clearStoredUser();
       setUser(null);
     } catch (error) {
@@ -87,23 +85,37 @@ export const useAuth = (): AuthContextType => {
 };
 
 // Helper functions for storing/retrieving user data
-// In a real app, you'd use AsyncStorage or SecureStore
 const storeUser = async (user: User): Promise<void> => {
-  // Simulate storing user data
-  console.log('Storing user data:', user);
-  // In a real app: await AsyncStorage.setItem('user', JSON.stringify(user));
+  try {
+    await AsyncStorage.setItem('user', JSON.stringify(user));
+    console.log('Stored user data:', user);
+  } catch (error) {
+    console.error('Failed to store user data:', error);
+    throw error;
+  }
 };
 
 const getStoredUser = async (): Promise<User | null> => {
-  // Simulate retrieving user data
-  console.log('Retrieving stored user data');
-  // In a real app: const userData = await AsyncStorage.getItem('user');
-  // return userData ? JSON.parse(userData) : null;
-  return null; // For now, always return null to start fresh
+  try {
+    const userData = await AsyncStorage.getItem('user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      console.log('Retrieved stored user data:', user);
+      return user;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to retrieve stored user data:', error);
+    return null;
+  }
 };
 
 const clearStoredUser = async (): Promise<void> => {
-  // Simulate clearing user data
-  console.log('Clearing stored user data');
-  // In a real app: await AsyncStorage.removeItem('user');
+  try {
+    await AsyncStorage.removeItem('user');
+    console.log('Cleared stored user data');
+  } catch (error) {
+    console.error('Failed to clear stored user data:', error);
+    throw error;
+  }
 }; 

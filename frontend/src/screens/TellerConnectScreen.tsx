@@ -17,7 +17,8 @@ import { AuthButton } from '../components/AuthButton';
 import { Background } from '../components/Background';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { getNonce, connectAccount, getConnectConfig } from '../api/tellerService';
-import { TellerConnectEnrollment } from '../types/teller';
+import { TellerSuccessPayload } from '../types/teller';
+import { useAuth } from '../contexts/AuthContext';
 
 // Get the App ID from environment variables or hardcode for now
 const TELLER_APP_ID = process.env.EXPO_PUBLIC_TELLER_APP_ID || 'app_pf53ae2brofp6upddo000';
@@ -78,9 +79,11 @@ type TellerConnectScreenRouteProp = RouteProp<AuthStackParamList, 'TellerConnect
 export const TellerConnectScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const route = useRoute<TellerConnectScreenRouteProp>();
+  const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showTellerModal, setShowTellerModal] = useState(false);
   const [tellerHtml, setTellerHtml] = useState<string | null>(null);
+  const [nonce, setNonce] = useState<string | null>(null);
 
   const webviewRef = useRef<WebView>(null);
 
@@ -88,10 +91,11 @@ export const TellerConnectScreen: React.FC = () => {
     setIsLoading(true);
     try {
       // 1. Fetch a secure nonce from the backend
-      const { nonce } = await getNonce();
+      const { nonce: fetchedNonce } = await getNonce();
       
-      // 2. Generate the HTML with the nonce
-      const html = generateTellerHtml(nonce);
+      // 2. Store it in state and generate the HTML
+      setNonce(fetchedNonce);
+      const html = generateTellerHtml(fetchedNonce);
       setTellerHtml(html);
 
       // 3. Open the WebView modal
@@ -104,19 +108,22 @@ export const TellerConnectScreen: React.FC = () => {
     }
   };
 
-  const handleTellerSuccess = async (enrollment: TellerConnectEnrollment) => {
+  const handleTellerSuccess = async (payload: TellerSuccessPayload) => {
     setShowTellerModal(false);
     setIsLoading(true);
     try {
-      // Send the enrollment data to our backend
-      await connectAccount(enrollment);
+      // Send the enrollment data and nonce to our backend
+      await connectAccount(payload, nonce);
       
-      // Use navigation.getParent() to go back or reset to main screen
-      const canGoBack = navigation.canGoBack();
-      if (canGoBack) {
-        navigation.goBack();
+      // Call the onSuccess callback if provided (from signup flow)
+      if (route.params?.onSuccess) {
+        await route.params.onSuccess();
       } else {
-        navigation.reset({ index: 0, routes: [{ name: 'Main' as never }] });
+        // If no callback provided, just go back
+        const canGoBack = navigation.canGoBack();
+        if (canGoBack) {
+          navigation.goBack();
+        }
       }
     } catch (error: any) {
       console.error("Failed to connect account on backend:", error);
@@ -155,11 +162,15 @@ export const TellerConnectScreen: React.FC = () => {
   };
 
   const handleSkip = async () => {
-    const canGoBack = navigation.canGoBack();
-    if (canGoBack) {
-      navigation.goBack();
+    // Call the onSuccess callback if provided (from signup flow)
+    if (route.params?.onSuccess) {
+      await route.params.onSuccess();
     } else {
-      navigation.reset({ index: 0, routes: [{ name: 'Main' as never }] });
+      // If no callback provided, just go back
+      const canGoBack = navigation.canGoBack();
+      if (canGoBack) {
+        navigation.goBack();
+      }
     }
   };
 

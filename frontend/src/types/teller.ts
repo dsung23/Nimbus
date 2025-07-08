@@ -1,73 +1,80 @@
-// Types for Teller API Integration
+// Types for Teller Connect flow
 
 /**
- * The main enrollment object returned by Teller Connect on success.
+ * The raw success payload received from the Teller Connect `onSuccess` callback.
  */
-export interface TellerConnectEnrollment {
+export interface TellerSuccessPayload {
   accessToken: string;
   user: {
     id: string;
   };
   enrollment: {
-    id:string;
+    id: string;
     institution: {
       name: string;
-      id?: string;
+      id: string;
     };
   };
-  signatures: string[];
+  signatures?: string[];
 }
 
 /**
- * Request body for POST /api/teller/connect
- * This will be sent from our frontend to our backend.
+ * The request body sent to our backend's /api/teller/connect endpoint.
+ * It wraps the Teller payload inside an `enrollment` property.
  */
 export interface TellerConnectRequest {
-  enrollment: TellerConnectEnrollment;
+  enrollment: TellerSuccessPayload;
+  nonce?: string;
 }
 
 /**
- * Response from our backend for POST /api/teller/connect
+ * The expected success response from our backend after connecting an account.
  */
 export interface TellerConnectResponse {
   success: boolean;
   message: string;
   enrollment_id: string;
-  sync_results: any; // Define more specific type if needed
+  sync_results: any;
+  timestamp: string;
 }
 
 /**
- * Response from our backend for GET /api/teller/link
+ * The response from our backend when creating a Teller Connect link.
  */
 export interface TellerConnectLinkResponse {
   success: boolean;
   connect_url: string;
-  enrollment_id: string;
-  expires_at: string;
+  application_id: string;
 }
 
 /**
- * Response from our backend for GET /api/teller/accounts
+ * The response from our backend when fetching all connected accounts.
  */
 export interface TellerAccountsResponse {
   success: boolean;
-  accounts: any[]; // Define a specific Account type
+  accounts: any[]; // Replace 'any' with a proper Account type
   total: number;
 }
 
 /**
- * Response from our backend for GET /api/teller/sync-status
+ * The response from our backend for sync status.
  */
 export interface TellerSyncStatusResponse {
   success: boolean;
-  summary: any; // Define a specific Summary type
-  accounts: any[]; // Define a specific Account type
+  summary: {
+    total: number;
+    active: number;
+    syncing: number;
+    failed: number;
+    last_sync: string | null;
+  };
+  accounts: any[]; // Replace 'any' with a proper Account type
 }
 
 /**
- * Response from our backend for GET /api/teller/nonce
+ * The response from our backend when generating a nonce.
  */
 export interface TellerNonceResponse {
-  success: boolean;
+  success: true;
   nonce: string;
 } 
