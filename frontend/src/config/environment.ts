@@ -7,7 +7,7 @@ export const ENV_CONFIG = {
   TELLER_ENVIRONMENT: process.env.EXPO_PUBLIC_TELLER_ENV || "sandbox", // "sandbox" or "production"
   
   // API Configuration
-  API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || "http://192.168.1.129:3789",
+  API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || "http://192.168.1.12:3789",
   
   // App Configuration
   APP_ENV: process.env.EXPO_PUBLIC_APP_ENV || "development", // "development", "staging", "production"

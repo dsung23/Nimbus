@@ -1,8 +1,9 @@
 export const API_CONFIG = {
-  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3789',
+  BASE_URL: 'http://192.168.1.12:3789',
   AUTH_ENDPOINT: '/api/auth',
   TELLER_ENDPOINT: '/api/teller',
   CHAT_ENDPOINT: '/api/chat',
+  ACCOUNTS_ENDPOINT: '/api/accounts',
 } as const;
 
 export const API_ENDPOINTS = {
@@ -22,4 +23,5 @@ export const API_ENDPOINTS = {
   CHAT: {
     SESSIONS: `${API_CONFIG.BASE_URL}${API_CONFIG.CHAT_ENDPOINT}/sessions`,
   },
+  ACCOUNTS: `${API_CONFIG.BASE_URL}${API_CONFIG.ACCOUNTS_ENDPOINT}`,
 } as const; 
