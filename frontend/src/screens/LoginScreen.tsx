@@ -4,6 +4,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +20,29 @@ const Container = styled.View`
   flex: 1;
   justify-content: center;
   padding: 24px;
+`;
+
+const BackButtonContainer = styled.View`
+  position: absolute;
+  top: 60px;
+  left: 24px;
+  z-index: 10;
+`;
+
+const BackButton = styled(TouchableOpacity)`
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background-color: rgba(255, 255, 255, 0.2);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+`;
+
+const BackButtonText = styled.Text`
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
 `;
 
 const HeaderTitle = styled.Text`
@@ -130,6 +154,11 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <Background>
+      <BackButtonContainer>
+        <BackButton onPress={() => navigation.goBack()}>
+          <BackButtonText>←</BackButtonText>
+        </BackButton>
+      </BackButtonContainer>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
