@@ -2,12 +2,11 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { getClient } = require('../utils/database');
+const cryptoService = require('../utils/crypto');
 
 class TellerService {
   constructor() {
-    this.baseURL = process.env.TELLER_ENVIRONMENT === 'production' 
-      ? 'https://api.teller.io' 
-      : 'https://api.teller.io/sandbox';
+    this.baseURL = 'https://api.teller.io';
     
     this.supabase = getClient();
     
@@ -248,56 +247,8 @@ class TellerService {
         console.log(`🔑 Using Access Token starting with: ${accessToken.substring(0, 8)}...`);
         console.log(`🌐 Making request to: ${this.baseURL}/accounts`);
         
-        // Handle sandbox mode with mock data if using test token
-        if (accessToken.startsWith('test_token_') || process.env.TELLER_ENVIRONMENT === 'sandbox') {
-          console.log('🧪 Using sandbox mode with mock data');
-          const mockAccounts = [
-            {
-              id: 'acc_pf53ae2brofp6upddo001',
-              enrollment_id: 'enr_pf53ae2brofp6upddo001',
-              links: {
-                balances: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo001/balances',
-                self: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo001',
-                transactions: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo001/transactions'
-              },
-              institution: {
-                name: 'Chase Bank',
-                id: 'chase'
-              },
-              type: 'depository',
-              name: 'Test Checking Account',
-              subtype: 'checking',
-              currency: 'USD',
-              last_four: '1234',
-              status: 'open'
-            },
-            {
-              id: 'acc_pf53ae2brofp6upddo002',
-              enrollment_id: 'enr_pf53ae2brofp6upddo001',
-              links: {
-                balances: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo002/balances',
-                self: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo002',
-                transactions: 'https://api.teller.io/accounts/acc_pf53ae2brofp6upddo002/transactions'
-              },
-              institution: {
-                name: 'Chase Bank',
-                id: 'chase'
-              },
-              type: 'depository',
-              name: 'Test Savings Account',
-              subtype: 'savings',
-              currency: 'USD',
-              last_four: '5678',
-              status: 'open'
-            }
-          ];
-          
-          // Cache the mock result
-          this.setCachedData(cacheKey, mockAccounts);
-          
-          console.log(`📊 Found ${mockAccounts.length} mock accounts for testing`);
-          return mockAccounts;
-        }
+        // For sandbox environment, still make actual API call to Teller sandbox
+        // This ensures we get real data from Teller's sandbox instead of hardcoded mock data
         
         // Use Basic Auth with the access token as username (Teller's authentication method)
         const response = await this.axiosInstance.get('/accounts', {
@@ -518,11 +469,27 @@ class TellerService {
     try {
       console.log(`🔄 Starting account sync for user ${userId}`);
       
+      // Get the actual enrollment data from the database to ensure we're using correct info
+      const { data: enrollment } = await this.supabase
+        .from('teller_enrollments')
+        .select('*')
+        .eq('enrollment_id', enrollmentId)
+        .eq('user_id', userId)
+        .single();
+
+      if (!enrollment) {
+        throw new Error(`Enrollment ${enrollmentId} not found for user ${userId}`);
+      }
+
+      // Use the access token from the enrollment record to ensure we're using the correct token
+      // Decrypt the access token since it's stored encrypted in the database
+      const actualAccessToken = cryptoService.decrypt(enrollment.access_token);
+      
       // Check rate limit before making API call
       await this.checkRateLimit(userId);
       
-      // Fetch accounts from Teller
-      const tellerAccounts = await this.fetchAccountsFromTeller(accessToken);
+      // Fetch accounts from Teller using the actual access token
+      const tellerAccounts = await this.fetchAccountsFromTeller(actualAccessToken);
       
       // Add a guard to ensure tellerAccounts is an array before proceeding.
       if (!Array.isArray(tellerAccounts)) {
@@ -544,13 +511,14 @@ class TellerService {
         }
         
         try {
-          await this.syncSingleAccount(userId, tellerAccount, enrollmentId, accessToken);
+          await this.syncSingleAccount(userId, tellerAccount, enrollmentId, actualAccessToken);
           
           // Check if account was created or updated
           const { data: existingAccount } = await this.supabase
             .from('accounts')
             .select('id')
             .eq('teller_account_id', tellerAccount.id)
+            .eq('user_id', userId)
             .single();
           
           if (existingAccount) {
@@ -596,26 +564,40 @@ class TellerService {
   async syncSingleAccount(userId, tellerAccount, enrollmentId, accessToken) {
     if (!this.supabase) throw new Error('Supabase client is not initialized');
     try {
-      // Check if account already exists
+      // Get enrollment data from teller_enrollments table to ensure we have real enrollment info
+      const { data: enrollment } = await this.supabase
+        .from('teller_enrollments')
+        .select('*')
+        .eq('enrollment_id', enrollmentId)
+        .eq('user_id', userId)
+        .single();
+
+      if (!enrollment) {
+        throw new Error(`Enrollment ${enrollmentId} not found for user ${userId}`);
+      }
+
+      // Check if account already exists for this specific user
+      // This prevents overwriting accounts that belong to different users
       const { data: existingAccount } = await this.supabase
         .from('accounts')
         .select('*')
         .eq('teller_account_id', tellerAccount.id)
+        .eq('user_id', userId)
         .single();
 
       const accountData = {
         user_id: userId,
-        name: tellerAccount.name || `${tellerAccount.institution?.name || 'Unknown'} Account`,
+        name: tellerAccount.name || `${tellerAccount.institution?.name || enrollment.institution_name || 'Unknown'} Account`,
         type: tellerAccount.type || 'other',
-        institution: tellerAccount.institution?.name || 'Unknown Institution',
+        institution: tellerAccount.institution?.name || enrollment.institution_name || 'Unknown Institution',
         account_number: tellerAccount.last_four ? `****${tellerAccount.last_four}` : null,
         routing_number: tellerAccount.routing_numbers?.[0] || null,
         balance: 0, // Will be updated with balance API call below
         available_balance: 0, // Will be updated with balance API call below
         currency: tellerAccount.currency || 'USD',
         teller_account_id: tellerAccount.id,
-        teller_institution_id: tellerAccount.institution?.id || null,
-        teller_enrollment_id: enrollmentId, // Add the enrollment ID to the account data
+        teller_institution_id: tellerAccount.institution?.id || enrollment.institution_id || null,
+        teller_enrollment_id: enrollment.enrollment_id, // Use the actual enrollment ID from the database
         sync_status: 'success',
         is_active: tellerAccount.status === 'open' ? true : false, // Use actual status from Teller
         is_primary: await this.shouldSetAsPrimary(userId, tellerAccount.id), // Set first account as primary
