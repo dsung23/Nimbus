@@ -8,6 +8,7 @@ import styled from 'styled-components/native';
 import { AccountCarousel } from '../components/AccountCarousel';
 import { Account, DashboardState } from '../types/account';
 import { Background } from '../components/Background';
+import { getAccounts } from '../api/accountService';
 
 // Styled components for glassmorphism dashboard
 const Container = styled.View`
@@ -76,42 +77,6 @@ const ErrorText = styled.Text`
   line-height: 24px;
 `;
 
-// Mock data with gradient colors for the carousel
-const mockAccounts: Account[] = [
-  {
-    id: '1',
-    type: 'savings',
-    name: 'Primary Savings',
-    balance: 15420.75,
-    mask: '1234',
-    gradientColors: ['#667eea', '#764ba2'] as const,
-  },
-  {
-    id: '2',
-    type: 'checking',
-    name: 'Main Checking',
-    balance: 3245.50,
-    mask: '5678',
-    gradientColors: ['#f093fb', '#f5576c'] as const,
-  },
-  {
-    id: '3',
-    type: 'credit',
-    name: 'Chase Freedom',
-    balance: 8749.70,
-    mask: '9012',
-    gradientColors: ['#4facfe', '#00f2fe'] as const,
-  },
-  {
-    id: '4',
-    type: 'investment',
-    name: 'Robinhood',
-    balance: 25500.00,
-    mask: '3456',
-    gradientColors: ['#43e97b', '#38f9d7'] as const,
-  },
-];
-
 export const DashboardScreen: React.FC = () => {
   const [state, setState] = useState<DashboardState>({
     accounts: [],
@@ -119,18 +84,25 @@ export const DashboardScreen: React.FC = () => {
     error: null,
   });
 
-  // Simulate loading data
+  // Load real account data from backend
   useEffect(() => {
     const loadAccounts = async () => {
       try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const response = await getAccounts();
         
-        setState({
-          accounts: mockAccounts,
-          isLoading: false,
-          error: null,
-        });
+        if (response.success) {
+          setState({
+            accounts: response.accounts,
+            isLoading: false,
+            error: null,
+          });
+        } else {
+          setState({
+            accounts: [],
+            isLoading: false,
+            error: response.error || 'Failed to load accounts. Please try again.',
+          });
+        }
       } catch (error) {
         setState({
           accounts: [],

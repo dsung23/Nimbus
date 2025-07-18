@@ -4,6 +4,10 @@ const cryptoService = require('../utils/crypto');
 const crypto = require('crypto');
 
 class TellerController {
+  constructor() {
+    this.getAccounts = this.getAccounts.bind(this);
+  }
+
   /**
    * Connect a user's bank account via Teller
    * This would typically be called after the user completes the Teller Connect flow
@@ -208,8 +212,28 @@ class TellerController {
   }
 
   /**
-   * Get all connected accounts for a user
+   * Helper function to get gradient colors based on account type
    */
+  getGradientColors = (accountType) => {
+    const colorMap = {
+      'checking': ['#f093fb', '#f5576c'],
+      'savings': ['#667eea', '#764ba2'],
+      'credit': ['#4facfe', '#00f2fe'],
+      'loan': ['#fa709a', '#fee140'],
+      'investment': ['#43e97b', '#38f9d7']
+    };
+    return colorMap[accountType] || ['#667eea', '#764ba2']; // default to savings colors
+  }
+
+  /**
+   * Helper function to generate account mask (last 4 digits)
+   */
+  generateAccountMask = (accountId) => {
+    // Use the last 4 characters of the account ID as a simple mask
+    // In a real implementation, you'd want to use the actual account number
+    return accountId.slice(-4);
+  }
+
   async getAccounts(req, res) {
     try {
       const userId = req.user.id;
@@ -225,7 +249,6 @@ class TellerController {
           available_balance,
           currency,
           sync_status,
-          verification_status,
           is_active,
           last_sync,
           created_at
@@ -241,10 +264,17 @@ class TellerController {
         });
       }
 
+      // Transform accounts to include frontend-required fields
+      const transformedAccounts = (accounts || []).map(account => ({
+        ...account,
+        mask: this.generateAccountMask(account.id),
+        gradientColors: this.getGradientColors(account.type)
+      }));
+
       res.json({
         success: true,
-        accounts: accounts || [],
-        total: accounts ? accounts.length : 0
+        accounts: transformedAccounts,
+        total: transformedAccounts.length
       });
 
     } catch (error) {
