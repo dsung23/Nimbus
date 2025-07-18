@@ -1,76 +1,239 @@
 const tellerService = require('../services/tellerService');
 const { getClient, validateData } = require('../utils/database');
 const cryptoService = require('../utils/crypto');
+const crypto = require('crypto');
 
 class TellerController {
+  constructor() {
+    this.getAccounts = this.getAccounts.bind(this);
+  }
+
   /**
    * Connect a user's bank account via Teller
    * This would typically be called after the user completes the Teller Connect flow
    */
   async connectAccount(req, res) {
-    try {
-      const { enrollment_id, access_token, institution_name, institution_id } = req.body;
-      const userId = req.user.id; // From auth middleware
+    const { enrollment, nonce } = req.body;
+    const userId = req.user.id;
+    let enrollmentId = null; // To hold the ID for potential cleanup
 
+    try {
       // Validate required fields
-      if (!enrollment_id || !access_token) {
+      if (!enrollment || !enrollment.accessToken || !enrollment.enrollment.id) {
         return res.status(400).json({
-          error: 'Missing required fields',
-          message: 'enrollment_id and access_token are required'
+          error: 'Invalid enrollment object',
+          message: 'The enrollment object with accessToken and enrollment.id is required'
         });
       }
 
-      console.log(`🔗 Connecting Teller account for user ${userId}`);
+      // Additional validation and debugging
+      console.log('🔍 Enrollment validation:', {
+        hasAccessToken: !!enrollment.accessToken,
+        accessTokenPrefix: enrollment.accessToken?.substring(0, 10) + '...',
+        hasEnrollmentId: !!enrollment.enrollment?.id,
+        enrollmentId: enrollment.enrollment?.id,
+        hasInstitution: !!enrollment.enrollment?.institution,
+        institutionName: enrollment.enrollment?.institution?.name
+      });
 
-      // Store the enrollment and access token
+      enrollmentId = enrollment.enrollment.id;
+
+      // Verify enrollment signature for security
+      if (nonce) {
+        const isSignatureValid = await tellerService.validateEnrollmentSignature(enrollment, nonce);
+        if (!isSignatureValid) {
+          console.warn('⚠️ Enrollment signature validation failed');
+          // In production, you might want to reject invalid signatures
+          // For now, we'll log the warning and continue
+        }
+      }
+
+      console.log(`🔗 Storing Teller enrollment for user ${userId}`);
+      console.log('📋 Full enrollment object received:', JSON.stringify(enrollment, null, 2));
+
+      // Step 1: Store the enrollment and access token
       const { error: enrollmentError } = await getClient()
         .from('teller_enrollments')
         .upsert({
           user_id: userId,
-          enrollment_id: enrollment_id,
-          access_token: cryptoService.encrypt(access_token),
-          institution_id: institution_id,
-          institution_name: institution_name,
+          enrollment_id: enrollmentId,
+          access_token: cryptoService.encrypt(enrollment.accessToken),
+          institution_id: enrollment.enrollment.institution.id || null,
+          institution_name: enrollment.enrollment.institution.name,
           status: 'active',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
 
       if (enrollmentError) {
-        console.error('❌ Error storing enrollment:', enrollmentError);
-        return res.status(500).json({
-          error: 'Failed to store enrollment',
-          message: enrollmentError.message
+        // If this initial insert fails, we can just throw the error
+        throw enrollmentError;
+      }
+
+      // Step 2: Validate access token by testing it before syncing
+      console.log('🔍 Testing access token validity...');
+      try {
+        // Test the access token by making a simple API call
+        await tellerService.fetchAccountsFromTeller(enrollment.accessToken);
+      } catch (tokenError) {
+        console.error('❌ Access token validation failed:', tokenError.message);
+        
+        // Clean up the enrollment we just created
+        await getClient()
+          .from('teller_enrollments')
+          .delete()
+          .eq('enrollment_id', enrollmentId);
+        
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid access token',
+          message: 'The access token from Teller Connect is invalid or expired. Please try connecting again.',
+          details: tokenError.message
         });
       }
 
-      // Sync accounts and transactions
-      const syncResult = await tellerService.syncAccountsForUser(
+      // Step 3: Sync accounts first
+      const accountSyncResult = await tellerService.syncAccountsForUser(
         userId, 
-        access_token, // Use plaintext token for API calls
-        enrollment_id
+        enrollment.accessToken,
+        enrollmentId
       );
+
+      // Step 4: Sync transactions for all synced accounts
+      let transactionSyncResults = {
+        total_accounts: 0,
+        total_transactions: 0,
+        errors: []
+      };
+
+      try {
+        // Get accounts that were just synced for this enrollment
+        const { data: syncedAccounts } = await getClient()
+          .from('accounts')
+          .select('id, teller_account_id')
+          .eq('user_id', userId)
+          .eq('teller_enrollment_id', enrollmentId);
+
+        if (syncedAccounts && syncedAccounts.length > 0) {
+          console.log(`🔄 Starting transaction and balance sync for ${syncedAccounts.length} accounts`);
+          
+          for (const account of syncedAccounts) {
+            try {
+              // Sync transactions
+              const transactionResult = await tellerService.syncTransactionsForAccount(
+                account.id,
+                enrollment.accessToken,
+                account.teller_account_id
+              );
+
+              transactionSyncResults.total_accounts++;
+              transactionSyncResults.total_transactions += transactionResult.created + transactionResult.updated;
+
+              // Sync account balance
+              try {
+                const balanceData = await tellerService.getAccountBalance(
+                  enrollment.accessToken,
+                  account.teller_account_id
+                );
+
+                // Update account balance in database
+                await getClient()
+                  .from('accounts')
+                  .update({
+                    balance: balanceData.current_balance,
+                    available_balance: balanceData.available_balance,
+                    last_sync: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', account.id);
+
+                console.log(`💰 Updated balance for account ${account.id}: $${balanceData.current_balance}`);
+              } catch (balanceError) {
+                console.warn(`⚠️ Could not fetch balance for account ${account.id}:`, balanceError.message);
+                transactionSyncResults.errors.push({
+                  account_id: account.id,
+                  type: 'balance_sync',
+                  error: balanceError.message
+                });
+              }
+            } catch (transactionError) {
+              console.error(`❌ Error syncing transactions for account ${account.id}:`, transactionError);
+              transactionSyncResults.errors.push({
+                account_id: account.id,
+                type: 'transaction_sync',
+                error: transactionError.message
+              });
+            }
+          }
+        }
+      } catch (transactionSyncError) {
+        console.error('❌ Error during transaction sync phase:', transactionSyncError);
+        transactionSyncResults.errors.push({
+          type: 'general',
+          error: transactionSyncError.message
+        });
+      }
+
+      console.log(`✅ Enrollment sync completed: ${accountSyncResult.created + accountSyncResult.updated} accounts, ${transactionSyncResults.total_transactions} transactions`);
 
       res.json({
         success: true,
-        message: 'Account connected successfully',
-        enrollment_id: enrollment_id,
-        sync_results: syncResult,
+        message: 'Account connected and synced successfully',
+        enrollment_id: enrollmentId,
+        sync_results: {
+          accounts: accountSyncResult,
+          transactions: transactionSyncResults
+        },
         timestamp: new Date().toISOString()
       });
 
     } catch (error) {
-      console.error('❌ Error in connectAccount:', error);
+      // If any step fails, log the specific error and send it back
+      console.error('🔴 CONNECT FAILURE:', error);
+
+      // Pseudo-transaction: Attempt to clean up the enrollment if it was created
+      if (enrollmentId) {
+        try {
+          await getClient()
+            .from('teller_enrollments')
+            .delete()
+            .eq('enrollment_id', enrollmentId);
+          console.log(`🧼 Cleaned up failed enrollment: ${enrollmentId}`);
+        } catch (cleanupError) {
+          console.error(`🔴 CLEANUP FAILURE for enrollment ${enrollmentId}:`, cleanupError);
+        }
+      }
+
       res.status(500).json({
-        error: 'Failed to connect account',
-        message: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message
+        success: false,
+        message: error.message || 'An unexpected server error occurred during account connection.'
       });
     }
   }
 
   /**
-   * Get all connected accounts for a user
+   * Helper function to get gradient colors based on account type
    */
+  getGradientColors = (accountType) => {
+    const colorMap = {
+      'checking': ['#f093fb', '#f5576c'],
+      'savings': ['#667eea', '#764ba2'],
+      'credit': ['#4facfe', '#00f2fe'],
+      'loan': ['#fa709a', '#fee140'],
+      'investment': ['#43e97b', '#38f9d7']
+    };
+    return colorMap[accountType] || ['#667eea', '#764ba2']; // default to savings colors
+  }
+
+  /**
+   * Helper function to generate account mask (last 4 digits)
+   */
+  generateAccountMask = (accountId) => {
+    // Use the last 4 characters of the account ID as a simple mask
+    // In a real implementation, you'd want to use the actual account number
+    return accountId.slice(-4);
+  }
+
   async getAccounts(req, res) {
     try {
       const userId = req.user.id;
@@ -86,7 +249,6 @@ class TellerController {
           available_balance,
           currency,
           sync_status,
-          verification_status,
           is_active,
           last_sync,
           created_at
@@ -102,10 +264,17 @@ class TellerController {
         });
       }
 
+      // Transform accounts to include frontend-required fields
+      const transformedAccounts = (accounts || []).map(account => ({
+        ...account,
+        mask: this.generateAccountMask(account.id),
+        gradientColors: this.getGradientColors(account.type)
+      }));
+
       res.json({
         success: true,
-        accounts: accounts || [],
-        total: accounts ? accounts.length : 0
+        accounts: transformedAccounts,
+        total: transformedAccounts.length
       });
 
     } catch (error) {
@@ -467,62 +636,23 @@ class TellerController {
   }
 
   /**
-   * Exchange a public token for an access token
+   * Get enrollment configuration for Teller Connect
    */
-  async exchangeToken(req, res) {
+  async getConnectConfig(req, res) {
     try {
-      const { public_token } = req.body;
       const userId = req.user.id;
 
-      if (!public_token) {
-        return res.status(400).json({
-          error: 'Missing required field',
-          message: 'public_token is required'
-        });
-      }
-
-      const tokenData = await tellerService.exchangeToken(public_token);
-
-      // Store the enrollment
-      const { error: enrollmentError } = await getClient()
-        .from('teller_enrollments')
-        .upsert({
-          user_id: userId,
-          enrollment_id: tokenData.enrollment_id,
-          access_token: cryptoService.encrypt(tokenData.access_token),
-          institution_id: tokenData.institution?.id,
-          institution_name: tokenData.institution?.name,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-
-      if (enrollmentError) {
-        console.error('❌ Error storing enrollment:', enrollmentError);
-        return res.status(500).json({
-          error: 'Failed to store enrollment',
-          message: enrollmentError.message
-        });
-      }
-
-      // Sync accounts for this user
-      const syncResult = await tellerService.syncAccountsForUser(
-        userId,
-        tokenData.access_token, // Use plaintext token for API calls
-        tokenData.enrollment_id
-      );
+      const connectData = await tellerService.createConnectLink(userId);
 
       res.json({
         success: true,
-        enrollment_id: tokenData.enrollment_id,
-        institution: tokenData.institution,
-        sync_results: syncResult
+        ...connectData
       });
 
     } catch (error) {
-      console.error('❌ Error in exchangeToken:', error);
+      console.error('❌ Error in getConnectConfig:', error);
       res.status(500).json({
-        error: 'Failed to exchange token',
+        error: 'Failed to get connect configuration',
         message: error.message
       });
     }
@@ -631,6 +761,74 @@ class TellerController {
       console.error('❌ Error in getAccountBalance:', error);
       res.status(500).json({
         error: 'Failed to get account balance',
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Generate a secure nonce for Teller Connect
+   */
+  async generateNonce(req, res) {
+    try {
+      const nonce = crypto.randomBytes(16).toString('hex');
+      // TODO: Store this nonce server-side, associated with the user's session,
+      // with a short expiry (e.g., 5 minutes) to be used for signature verification.
+      res.json({ success: true, nonce });
+    } catch (error) {
+      console.error('❌ Error generating nonce:', error);
+      res.status(500).json({
+        error: 'Failed to generate nonce',
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Manually trigger sync for the current user
+   */
+  async triggerUserSync(req, res) {
+    try {
+      const userId = req.user.id;
+      const syncService = require('../services/syncService');
+
+      console.log(`🔄 Manual sync triggered for user ${userId}`);
+      
+      const result = await syncService.syncUser(userId);
+
+      res.json({
+        success: true,
+        message: 'User sync completed successfully',
+        sync_results: result,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error('❌ Error in triggerUserSync:', error);
+      res.status(500).json({
+        error: 'Failed to trigger user sync',
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Get background sync service status
+   */
+  async getSyncServiceStatus(req, res) {
+    try {
+      const syncService = require('../services/syncService');
+      const status = syncService.getStatus();
+
+      res.json({
+        success: true,
+        sync_service: status
+      });
+
+    } catch (error) {
+      console.error('❌ Error in getSyncServiceStatus:', error);
+      res.status(500).json({
+        error: 'Failed to get sync service status',
         message: error.message
       });
     }

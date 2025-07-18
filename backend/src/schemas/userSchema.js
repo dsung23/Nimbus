@@ -14,6 +14,7 @@ const userSchema = {
       last_name VARCHAR(100),
       phone VARCHAR(20),
       date_of_birth DATE,
+      email_verified BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       last_login TIMESTAMP WITH TIME ZONE,
@@ -25,7 +26,8 @@ const userSchema = {
   // Indexes for better query performance
   indexes: [
     'CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);',
-    'CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);'
+    'CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);',
+    'CREATE INDEX IF NOT EXISTS idx_users_email_verified ON users(email_verified);'
   ],
   
   // Row Level Security (RLS) policies for Supabase

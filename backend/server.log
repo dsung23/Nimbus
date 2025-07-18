@@ -1,0 +1,1458 @@
+
+> backend@1.0.0 dev
+> nodemon index.js
+
+[33m[nodemon] 3.1.10[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+🔧 Debug: About to insert profile...
+🔧 Service Role Key exists: true
+🔧 User ID: 1d778c72-3af8-4a03-abcd-bab453a606e0
+🔧 Profile data to insert: {
+  id: '1d778c72-3af8-4a03-abcd-bab453a606e0',
+  email: 'bsbeids@gmail.com',
+  password_hash: 'supabase_auth',
+  first_name: 'hdhsjjd',
+  last_name: 'gage',
+  phone: '5434367988',
+  date_of_birth: 1994-07-05T00:00:00.000Z,
+  is_active: true,
+  preferences: {},
+  created_at: '2025-07-05T09:06:01.586Z',
+  updated_at: '2025-07-05T09:06:01.586Z',
+  last_login: null
+}
+🔗 Storing Teller enrollment for user 1d778c72-3af8-4a03-abcd-bab453a606e0
+🔄 Starting account sync for user 1d778c72-3af8-4a03-abcd-bab453a606e0
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/sandbox/accounts
+❌ Error fetching accounts from Teller: {
+  error: {
+    message: 'The requested resource does not exist',
+    code: 'not_found'
+  }
+}
+🔴 Axios Error Details: {
+  message: 'Request failed with status code 404',
+  url: '/accounts',
+  method: 'get',
+  status: 404,
+  statusText: 'Not Found',
+  data: {
+    error: {
+      message: 'The requested resource does not exist',
+      code: 'not_found'
+    }
+  },
+  headers: Object [AxiosHeaders] {
+    'cache-control': 'max-age=0, private, must-revalidate',
+    connection: 'close',
+    'content-length': '80',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Sat, 05 Jul 2025 09:06:20 GMT',
+    server: 'Cowboy',
+    vary: 'accept-encoding',
+    'x-request-id': 'GE9PrEFawZ_OK1EALxcB'
+  },
+  baseURL: 'https://api.teller.io/sandbox',
+  timeout: 30000
+}
+❌ Error in syncAccountsForUser: Error: Account not found. The enrollment may have expired or the account may have been disconnected.
+    at /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:296:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async TellerService.deduplicateRequest (/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:117:22)
+    at async TellerService.syncAccountsForUser (/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:395:30)
+    at async connectAccount (/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/tellerController.js:59:26)
+🔴 CONNECT FAILURE: Error: Account not found. The enrollment may have expired or the account may have been disconnected.
+    at /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:296:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async TellerService.deduplicateRequest (/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:117:22)
+    at async TellerService.syncAccountsForUser (/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:395:30)
+    at async connectAccount (/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/tellerController.js:59:26)
+🧼 Cleaned up failed enrollment: enr_pfmem346c32r5a409i000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async SupabaseAuthClient.signUp (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:285:23)
+    at async registerUser (/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js:59:52) {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async SupabaseAuthClient.signUp (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:285:23)
+    at async registerUser (/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js:59:52) {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async SupabaseAuthClient.signUp (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:285:23)
+    at async registerUser (/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js:59:52) {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async SupabaseAuthClient.signUp (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:285:23)
+    at async registerUser (/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js:59:52) {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+🔧 Debug: About to insert profile...
+🔧 Service Role Key exists: true
+🔧 User ID: da1deb4d-9f32-4a2e-8182-5da314838423
+🔧 Profile data to insert: {
+  id: 'da1deb4d-9f32-4a2e-8182-5da314838423',
+  email: 'bdfjodd@gmail.com',
+  password_hash: 'supabase_auth',
+  first_name: 'ikebre',
+  last_name: 'shaoshjd',
+  phone: '2024084546',
+  date_of_birth: 1982-07-05T00:00:00.000Z,
+  is_active: true,
+  preferences: {},
+  created_at: '2025-07-05T09:28:05.906Z',
+  updated_at: '2025-07-05T09:28:05.906Z',
+  last_login: null
+}
+🔍 Enrollment validation: {
+  hasAccessToken: true,
+  accessTokenPrefix: 'test_token...',
+  hasEnrollmentId: true,
+  enrollmentId: 'enr_pfmfacil9lnedflr3u000',
+  hasInstitution: true,
+  institutionName: 'Truist'
+}
+🔗 Storing Teller enrollment for user da1deb4d-9f32-4a2e-8182-5da314838423
+📋 Full enrollment object received: {
+  "accessToken": "test_token_e4zawq3bg4arq",
+  "user": {
+    "id": "usr_pfmfacij9lnedflr3u000"
+  },
+  "enrollment": {
+    "id": "enr_pfmfacil9lnedflr3u000",
+    "institution": {
+      "id": "truist",
+      "name": "Truist"
+    }
+  },
+  "signatures": [
+    "J0Tcl7Ip7oKeVyOyO1wdgTSR0XGVTyQZ23FC4LdEDnnY3Cu2vSoTdODCDIjUF+2Ohhv3LDX4PU7P/dnJIzRTBg=="
+  ]
+}
+🔍 Testing access token validity...
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/sandbox/accounts
+🧪 Using sandbox mode with mock data
+📊 Found 2 mock accounts for testing
+🔄 Starting account sync for user da1deb4d-9f32-4a2e-8182-5da314838423
+📦 Using cached accounts data (2 accounts)
+❌ Error syncing account acc_pf53ae2brofp6upddo001: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo001: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo002: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo002: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+✅ Account sync completed: {
+  created: 0,
+  updated: 0,
+  errors: [
+    {
+      account_id: 'acc_pf53ae2brofp6upddo001',
+      error: "Could not find the 'status' column of 'accounts' in the schema cache"
+    },
+    {
+      account_id: 'acc_pf53ae2brofp6upddo002',
+      error: "Could not find the 'status' column of 'accounts' in the schema cache"
+    }
+  ]
+}
+🔧 Debug: About to insert profile...
+🔧 Service Role Key exists: true
+🔧 User ID: 14b1ff0a-6ccf-4128-8adc-093d1eef1cbf
+🔧 Profile data to insert: {
+  id: '14b1ff0a-6ccf-4128-8adc-093d1eef1cbf',
+  email: '2024adens08@gmail.com',
+  password_hash: 'supabase_auth',
+  first_name: 'Suhaib',
+  last_name: 'Aden',
+  phone: '6128067488',
+  date_of_birth: 2006-09-13T00:00:00.000Z,
+  is_active: true,
+  preferences: {},
+  created_at: '2025-07-05T09:30:14.466Z',
+  updated_at: '2025-07-05T09:30:14.466Z',
+  last_login: null
+}
+🔍 Enrollment validation: {
+  hasAccessToken: true,
+  accessTokenPrefix: 'test_token...',
+  hasEnrollmentId: true,
+  enrollmentId: 'enr_pfmfcbdkc32r5a409i000',
+  hasInstitution: true,
+  institutionName: 'Chase'
+}
+🔗 Storing Teller enrollment for user 14b1ff0a-6ccf-4128-8adc-093d1eef1cbf
+📋 Full enrollment object received: {
+  "accessToken": "test_token_c5uudskn2naeq",
+  "user": {
+    "id": "usr_pfmfcbdis32r5a409i000"
+  },
+  "enrollment": {
+    "id": "enr_pfmfcbdkc32r5a409i000",
+    "institution": {
+      "id": "chase",
+      "name": "Chase"
+    }
+  },
+  "signatures": [
+    "Bd4YnAx2K3bWDp7xaY3L5WaxH4tjOlmMrsBTlbmTjNtFA4DM5rjt2oMWnQnRQXzy2xHga5SrKckSxjkXyJU+BQ=="
+  ]
+}
+🔍 Testing access token validity...
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/sandbox/accounts
+🧪 Using sandbox mode with mock data
+📊 Found 2 mock accounts for testing
+🔄 Starting account sync for user 14b1ff0a-6ccf-4128-8adc-093d1eef1cbf
+📦 Using cached accounts data (2 accounts)
+❌ Error syncing account acc_pf53ae2brofp6upddo001: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo001: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo002: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo002: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+✅ Account sync completed: {
+  created: 0,
+  updated: 0,
+  errors: [
+    {
+      account_id: 'acc_pf53ae2brofp6upddo001',
+      error: "Could not find the 'status' column of 'accounts' in the schema cache"
+    },
+    {
+      account_id: 'acc_pf53ae2brofp6upddo002',
+      error: "Could not find the 'status' column of 'accounts' in the schema cache"
+    }
+  ]
+}
+🔧 Debug: getUserProfile called with userId: 14b1ff0a-6ccf-4128-8adc-093d1eef1cbf
+🔧 Debug: Query result: {
+  profileData: {
+    id: '14b1ff0a-6ccf-4128-8adc-093d1eef1cbf',
+    email: '2024adens08@gmail.com',
+    password_hash: 'supabase_auth',
+    first_name: 'Suhaib',
+    last_name: 'Aden',
+    phone: '6128067488',
+    date_of_birth: '2006-09-13',
+    created_at: '2025-07-05T09:30:14.466+00:00',
+    updated_at: '2025-07-05T09:31:40.352294+00:00',
+    last_login: '2025-07-05T09:31:40.269+00:00',
+    is_active: true,
+    preferences: {}
+  },
+  profileError: null
+}
+🔧 Debug: getUserProfile called with userId: 14b1ff0a-6ccf-4128-8adc-093d1eef1cbf
+🔧 Debug: Query result: {
+  profileData: {
+    id: '14b1ff0a-6ccf-4128-8adc-093d1eef1cbf',
+    email: '2024adens08@gmail.com',
+    password_hash: 'supabase_auth',
+    first_name: 'Suhaib',
+    last_name: 'Aden',
+    phone: '6128067488',
+    date_of_birth: '2006-09-13',
+    created_at: '2025-07-05T09:30:14.466+00:00',
+    updated_at: '2025-07-05T09:32:33.942001+00:00',
+    last_login: '2025-07-05T09:32:33.864+00:00',
+    is_active: true,
+    preferences: {}
+  },
+  profileError: null
+}
+🔧 Debug: About to insert profile...
+🔧 Service Role Key exists: true
+🔧 User ID: 6b554d66-4590-4fd4-b15b-22d43e6e7bc5
+🔧 Profile data to insert: {
+  id: '6b554d66-4590-4fd4-b15b-22d43e6e7bc5',
+  email: '2024adens08@gmail.com',
+  password_hash: 'supabase_auth',
+  first_name: 'Suhaib',
+  last_name: 'Aden',
+  phone: '6128067488',
+  date_of_birth: 2006-09-13T00:00:00.000Z,
+  is_active: true,
+  preferences: {},
+  created_at: '2025-07-05T09:36:03.249Z',
+  updated_at: '2025-07-05T09:36:03.249Z',
+  last_login: null
+}
+🔍 Enrollment validation: {
+  hasAccessToken: true,
+  accessTokenPrefix: 'test_token...',
+  hasEnrollmentId: true,
+  enrollmentId: 'enr_pfmfhub04o1ti1bntk000',
+  hasInstitution: true,
+  institutionName: 'USAA'
+}
+🔗 Storing Teller enrollment for user 6b554d66-4590-4fd4-b15b-22d43e6e7bc5
+📋 Full enrollment object received: {
+  "accessToken": "test_token_t6gq5kvclz7h2",
+  "user": {
+    "id": "usr_pfmfhuauko1ti1bntk000"
+  },
+  "enrollment": {
+    "id": "enr_pfmfhub04o1ti1bntk000",
+    "institution": {
+      "id": "usaa",
+      "name": "USAA"
+    }
+  },
+  "signatures": [
+    "bRGe3owaDh3cM3tXCzJIJtQCs1eKN+uzWn3fGu8Pi+wus5svVTie8/LFIk0D+U0OAl48hfM0gDSAGOBArxhMCQ=="
+  ]
+}
+🔍 Testing access token validity...
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/sandbox/accounts
+🧪 Using sandbox mode with mock data
+📊 Found 2 mock accounts for testing
+🔄 Starting account sync for user 6b554d66-4590-4fd4-b15b-22d43e6e7bc5
+📦 Using cached accounts data (2 accounts)
+❌ Error syncing account acc_pf53ae2brofp6upddo001: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo001: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo002: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+❌ Error syncing account acc_pf53ae2brofp6upddo002: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'status' column of 'accounts' in the schema cache"
+}
+✅ Account sync completed: {
+  created: 0,
+  updated: 0,
+  errors: [
+    {
+      account_id: 'acc_pf53ae2brofp6upddo001',
+      error: "Could not find the 'status' column of 'accounts' in the schema cache"
+    },
+    {
+      account_id: 'acc_pf53ae2brofp6upddo002',
+      error: "Could not find the 'status' column of 'accounts' in the schema cache"
+    }
+  ]
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: read ECONNRESET
+      at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20) {
+    errno: -54,
+    code: 'ECONNRESET',
+    syscall: 'read'
+  }
+}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+node:internal/modules/cjs/loader:1404
+  throw err;
+  ^
+
+Error: Cannot find module './chatMessageSchema'
+Require stack:
+- /Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/app.js
+- /Users/suhaibaden/Documents/cofund_app/backend/index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js:8:27)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/app.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/index.js'
+  ]
+}
+
+Node.js v22.16.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+node:internal/modules/cjs/loader:1404
+  throw err;
+  ^
+
+Error: Cannot find module './chatSessionSchema'
+Require stack:
+- /Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/app.js
+- /Users/suhaibaden/Documents/cofund_app/backend/index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js:7:27)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/app.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/index.js'
+  ]
+}
+
+Node.js v22.16.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+node:internal/modules/cjs/loader:1404
+  throw err;
+  ^
+
+Error: Cannot find module './chatMessageSchema'
+Require stack:
+- /Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js
+- /Users/suhaibaden/Documents/cofund_app/backend/src/app.js
+- /Users/suhaibaden/Documents/cofund_app/backend/index.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js:8:27)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/schemas/index.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/utils/database.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/userController.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/routes/api.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/src/app.js',
+    '/Users/suhaibaden/Documents/cofund_app/backend/index.js'
+  ]
+}
+
+Node.js v22.16.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+/Users/suhaibaden/Documents/cofund_app/backend/node_modules/router/lib/route.js:228
+        throw new TypeError('argument handler must be a function')
+        ^
+
+TypeError: argument handler must be a function
+    at Route.<computed> [as post] (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/router/lib/route.js:228:15)
+    at Router.<computed> [as post] (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/router/index.js:448:19)
+    at Object.<anonymous> (/Users/suhaibaden/Documents/cofund_app/backend/src/routes/authRoutes.js:137:8)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+    at Object..js (node:internal/modules/cjs/loader:1895:10)
+    at Module.load (node:internal/modules/cjs/loader:1465:32)
+    at Function._load (node:internal/modules/cjs/loader:1282:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+
+Node.js v22.16.0
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+🔧 Debug: getUserProfile called with userId: 53c8b189-f5bb-44bc-8c70-04cb03963136
+🔧 Debug: Query result: {
+  profileData: {
+    id: '53c8b189-f5bb-44bc-8c70-04cb03963136',
+    email: '2024adens08@gmail.com',
+    password_hash: 'supabase_auth',
+    first_name: 'Suhaib',
+    last_name: 'Aden',
+    phone: '6128067488',
+    date_of_birth: '2006-09-13',
+    created_at: '2025-07-15T04:27:34.122+00:00',
+    updated_at: '2025-07-15T04:32:43.667759+00:00',
+    last_login: '2025-07-15T04:28:56.521+00:00',
+    is_active: true,
+    preferences: {}
+  },
+  profileError: null
+}
+🔧 Debug: About to insert profile...
+🔧 Service Role Key exists: true
+🔧 User ID: 257ff402-f457-485e-93d3-ba8b42e4ef33
+🔧 Profile data to insert: {
+  id: '257ff402-f457-485e-93d3-ba8b42e4ef33',
+  email: '2024adens08@gmail.com',
+  password_hash: 'supabase_auth',
+  first_name: 'Suhaib',
+  last_name: 'Aden',
+  phone: '6128067488',
+  date_of_birth: 2006-09-13T00:00:00.000Z,
+  is_active: true,
+  preferences: {},
+  created_at: '2025-07-15T05:07:01.957Z',
+  updated_at: '2025-07-15T05:07:01.957Z',
+  last_login: null
+}
+🔍 Enrollment validation: {
+  hasAccessToken: true,
+  accessTokenPrefix: 'test_token...',
+  hasEnrollmentId: true,
+  enrollmentId: 'enr_pg33r1lu49fbdo8bjk000',
+  hasInstitution: true,
+  institutionName: 'American Express'
+}
+🔗 Storing Teller enrollment for user 257ff402-f457-485e-93d3-ba8b42e4ef33
+📋 Full enrollment object received: {
+  "accessToken": "test_token_czoctdlpeco7k",
+  "user": {
+    "id": "usr_pg33r1lkk9fbdo8bjk000"
+  },
+  "enrollment": {
+    "id": "enr_pg33r1lu49fbdo8bjk000",
+    "institution": {
+      "id": "amex",
+      "name": "American Express"
+    }
+  },
+  "signatures": [
+    "QzlAVuYnl0sjBl8OGyLoDyK6Hgi/f+sRLybmrD4n8cZpQCWjLZVpLUdeP2iC6WuuST1PoPjwvBpF8pSQWJM1Dg=="
+  ]
+}
+🔍 Testing access token validity...
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/sandbox/accounts
+❌ Error fetching accounts from Teller: {
+  error: {
+    message: 'The requested resource does not exist',
+    code: 'not_found'
+  }
+}
+🔴 Axios Error Details: {
+  message: 'Request failed with status code 404',
+  url: '/accounts',
+  method: 'get',
+  status: 404,
+  statusText: 'Not Found',
+  data: {
+    error: {
+      message: 'The requested resource does not exist',
+      code: 'not_found'
+    }
+  },
+  headers: Object [AxiosHeaders] {
+    'cache-control': 'max-age=0, private, must-revalidate',
+    connection: 'close',
+    'content-length': '80',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Tue, 15 Jul 2025 05:07:32 GMT',
+    server: 'Cowboy',
+    vary: 'accept-encoding',
+    'x-request-id': 'GFJUcdj-ak69wY4AHNoR'
+  },
+  baseURL: 'https://api.teller.io/sandbox',
+  timeout: 30000
+}
+❌ Access token validation failed: Account not found. The enrollment may have expired, the access token may be invalid, or the account may have been disconnected.
+🔍 Enrollment validation: {
+  hasAccessToken: true,
+  accessTokenPrefix: 'test_token...',
+  hasEnrollmentId: true,
+  enrollmentId: 'enr_pg33s70ooid56hc9ga000',
+  hasInstitution: true,
+  institutionName: 'TD Bank'
+}
+🔗 Storing Teller enrollment for user 257ff402-f457-485e-93d3-ba8b42e4ef33
+📋 Full enrollment object received: {
+  "accessToken": "test_token_7jh36ebbbdkka",
+  "user": {
+    "id": "usr_pg33s70n8id56hc9ga000"
+  },
+  "enrollment": {
+    "id": "enr_pg33s70ooid56hc9ga000",
+    "institution": {
+      "id": "td_bank",
+      "name": "TD Bank"
+    }
+  },
+  "signatures": [
+    "pBpVGbOk71mK+XQmMVGk+r+hxTpO6USTusnN8sBLnX7tOkturdUOUivmHbtDwW8J+nyYM+ZiQc0WBPEXGRAnAw=="
+  ]
+}
+🔍 Testing access token validity...
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/sandbox/accounts
+❌ Error fetching accounts from Teller: {
+  error: {
+    message: 'The requested resource does not exist',
+    code: 'not_found'
+  }
+}
+🔴 Axios Error Details: {
+  message: 'Request failed with status code 404',
+  url: '/accounts',
+  method: 'get',
+  status: 404,
+  statusText: 'Not Found',
+  data: {
+    error: {
+      message: 'The requested resource does not exist',
+      code: 'not_found'
+    }
+  },
+  headers: Object [AxiosHeaders] {
+    'cache-control': 'max-age=0, private, must-revalidate',
+    connection: 'close',
+    'content-length': '80',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Tue, 15 Jul 2025 05:08:48 GMT',
+    server: 'Cowboy',
+    vary: 'accept-encoding',
+    'x-request-id': 'GFJUg4qxxHjsMzwAL22x'
+  },
+  baseURL: 'https://api.teller.io/sandbox',
+  timeout: 30000
+}
+❌ Access token validation failed: Account not found. The enrollment may have expired, the access token may be invalid, or the account may have been disconnected.
+🔧 Debug: getUserProfile called with userId: 257ff402-f457-485e-93d3-ba8b42e4ef33
+🔧 Debug: Query result: {
+  profileData: {
+    id: '257ff402-f457-485e-93d3-ba8b42e4ef33',
+    email: '2024adens08@gmail.com',
+    password_hash: 'supabase_auth',
+    first_name: 'Suhaib',
+    last_name: 'Aden',
+    phone: '6128067488',
+    date_of_birth: '2006-09-13',
+    created_at: '2025-07-15T05:07:01.957+00:00',
+    updated_at: '2025-07-15T05:15:48.07889+00:00',
+    last_login: '2025-07-15T05:15:47.917+00:00',
+    is_active: true,
+    preferences: {}
+  },
+  profileError: null
+}
+🔧 Debug: getUserProfile called with userId: 257ff402-f457-485e-93d3-ba8b42e4ef33
+🔧 Debug: Query result: {
+  profileData: {
+    id: '257ff402-f457-485e-93d3-ba8b42e4ef33',
+    email: '2024adens08@gmail.com',
+    password_hash: 'supabase_auth',
+    first_name: 'Suhaib',
+    last_name: 'Aden',
+    phone: '6128067488',
+    date_of_birth: '2006-09-13',
+    created_at: '2025-07-15T05:07:01.957+00:00',
+    updated_at: '2025-07-15T05:15:48.07889+00:00',
+    last_login: '2025-07-15T05:15:47.917+00:00',
+    is_active: true,
+    preferences: {}
+  },
+  profileError: null
+}
+🔧 Debug: About to insert profile...
+🔧 Service Role Key exists: true
+🔧 User ID: 02decbd2-03a6-4e08-8959-21879fe70ffd
+🔧 Profile data to insert: {
+  id: '02decbd2-03a6-4e08-8959-21879fe70ffd',
+  email: '2024adens08@gmail.com',
+  password_hash: 'supabase_auth',
+  first_name: 'Suhaib',
+  last_name: 'Aden',
+  phone: '6128067488',
+  date_of_birth: 2006-09-13T00:00:00.000Z,
+  is_active: true,
+  preferences: {},
+  created_at: '2025-07-15T05:17:11.500Z',
+  updated_at: '2025-07-15T05:17:11.500Z',
+  last_login: null
+}
+🔍 Enrollment validation: {
+  hasAccessToken: true,
+  accessTokenPrefix: 'test_token...',
+  hasEnrollmentId: true,
+  enrollmentId: 'enr_pg34479h49fbdo8bjk000',
+  hasInstitution: true,
+  institutionName: 'Citibank'
+}
+🔗 Storing Teller enrollment for user 02decbd2-03a6-4e08-8959-21879fe70ffd
+📋 Full enrollment object received: {
+  "accessToken": "test_token_24gmvnux56jr6",
+  "user": {
+    "id": "usr_pg34478f49fbdo8bjk000"
+  },
+  "enrollment": {
+    "id": "enr_pg34479h49fbdo8bjk000",
+    "institution": {
+      "id": "citibank",
+      "name": "Citibank"
+    }
+  },
+  "signatures": [
+    "aVJgayTdVatePTqzVktsgqbXtQ64SC8QfBAcWwIxmckI9GgE3luEeYyjEsHpMhiTsnzgYwpawAa3pSOyqu19Aw=="
+  ]
+}
+🔍 Testing access token validity...
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/sandbox/accounts
+❌ Error fetching accounts from Teller: {
+  error: {
+    message: 'The requested resource does not exist',
+    code: 'not_found'
+  }
+}
+🔴 Axios Error Details: {
+  message: 'Request failed with status code 404',
+  url: '/accounts',
+  method: 'get',
+  status: 404,
+  statusText: 'Not Found',
+  data: {
+    error: {
+      message: 'The requested resource does not exist',
+      code: 'not_found'
+    }
+  },
+  headers: Object [AxiosHeaders] {
+    'cache-control': 'max-age=0, private, must-revalidate',
+    connection: 'close',
+    'content-length': '80',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Tue, 15 Jul 2025 05:17:36 GMT',
+    server: 'Cowboy',
+    vary: 'accept-encoding',
+    'x-request-id': 'GFJU_ocMBiwxgVsANXCh'
+  },
+  baseURL: 'https://api.teller.io/sandbox',
+  timeout: 30000
+}
+❌ Access token validation failed: Account not found. The enrollment may have expired, the access token may be invalid, or the account may have been disconnected.
+🔍 Enrollment validation: {
+  hasAccessToken: true,
+  accessTokenPrefix: 'test_token...',
+  hasEnrollmentId: true,
+  enrollmentId: 'enr_pg3454834b8e9h71da000',
+  hasInstitution: true,
+  institutionName: 'CapitalOne'
+}
+🔗 Storing Teller enrollment for user 02decbd2-03a6-4e08-8959-21879fe70ffd
+📋 Full enrollment object received: {
+  "accessToken": "test_token_kgqctww5cza6q",
+  "user": {
+    "id": "usr_pg3454814b8e9h71da000"
+  },
+  "enrollment": {
+    "id": "enr_pg3454834b8e9h71da000",
+    "institution": {
+      "id": "capital_one",
+      "name": "CapitalOne"
+    }
+  },
+  "signatures": [
+    "bKVVNWfcqrx3cNoBvnDabbKnun1m4sT2nXHqU1LNiNzPO9r7WCoseKkqTgJnuvedTsl7u/EdjumkCXQD4u0XCw=="
+  ]
+}
+🔍 Testing access token validity...
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/sandbox/accounts
+❌ Error fetching accounts from Teller: {
+  error: {
+    message: 'The requested resource does not exist',
+    code: 'not_found'
+  }
+}
+🔴 Axios Error Details: {
+  message: 'Request failed with status code 404',
+  url: '/accounts',
+  method: 'get',
+  status: 404,
+  statusText: 'Not Found',
+  data: {
+    error: {
+      message: 'The requested resource does not exist',
+      code: 'not_found'
+    }
+  },
+  headers: Object [AxiosHeaders] {
+    'cache-control': 'max-age=0, private, must-revalidate',
+    connection: 'close',
+    'content-length': '80',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Tue, 15 Jul 2025 05:18:32 GMT',
+    server: 'Cowboy',
+    vary: 'accept-encoding',
+    'x-request-id': 'GFJVC4Jr4-lACIcANXux'
+  },
+  baseURL: 'https://api.teller.io/sandbox',
+  timeout: 30000
+}
+❌ Access token validation failed: Account not found. The enrollment may have expired, the access token may be invalid, or the account may have been disconnected.
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async _handleRequest (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:106:18)
+    at async _request (/Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/fetch.js:95:18)
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/GoTrueClient.js:1534:24
+    at async /Users/suhaibaden/Documents/cofund_app/backend/node_modules/@supabase/auth-js/dist/main/lib/helpers.js:216:36 {
+  [cause]: Error: getaddrinfo ENOTFOUND mbpwyjiktgszacxsqyzo.supabase.co
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'mbpwyjiktgszacxsqyzo.supabase.co'
+  }
+}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+🔧 Debug: About to insert profile...
+🔧 Service Role Key exists: true
+🔧 User ID: e10467dc-8a3a-4322-90ab-a2180732929b
+🔧 Profile data to insert: {
+  id: 'e10467dc-8a3a-4322-90ab-a2180732929b',
+  email: '2024adens08@gmail.com',
+  password_hash: 'supabase_auth',
+  first_name: 'Suhaib',
+  last_name: 'Aden',
+  phone: '6128067488',
+  date_of_birth: 2006-09-13T00:00:00.000Z,
+  is_active: true,
+  preferences: {},
+  created_at: '2025-07-17T08:43:44.690Z',
+  updated_at: '2025-07-17T08:43:44.690Z',
+  last_login: null
+}
+🔍 Enrollment validation: {
+  hasAccessToken: true,
+  accessTokenPrefix: 'test_token...',
+  hasEnrollmentId: true,
+  enrollmentId: 'enr_pg5se10t4b8e9h71da000',
+  hasInstitution: true,
+  institutionName: 'CapitalOne'
+}
+🔗 Storing Teller enrollment for user e10467dc-8a3a-4322-90ab-a2180732929b
+📋 Full enrollment object received: {
+  "accessToken": "test_token_firhscvj2bzj6",
+  "user": {
+    "id": "usr_pg5se10rkb8e9h71da000"
+  },
+  "enrollment": {
+    "id": "enr_pg5se10t4b8e9h71da000",
+    "institution": {
+      "id": "capital_one",
+      "name": "CapitalOne"
+    }
+  },
+  "signatures": [
+    "PKF/AYtoIkfY1PjlbG9nxJcbFZa8BEubd0WhWwWCkocB2PVnU8BzxwFQMEMnh+vZfDfxjb4p1Ox8UbxDCz7ECg=="
+  ]
+}
+🔍 Testing access token validity...
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: test_tok...
+🌐 Making request to: https://api.teller.io/accounts
+✅ Successfully received response from Teller API.
+📦 Response status: 200
+📦 Response headers: Object [AxiosHeaders] {
+  'cache-control': 'max-age=0, private, must-revalidate',
+  connection: 'close',
+  'content-length': '322',
+  'content-type': 'application/json; charset=utf-8',
+  date: 'Thu, 17 Jul 2025 08:44:04 GMT',
+  server: 'Teller API',
+  vary: 'accept-encoding',
+  'x-request-id': 'GFL9a-vhPEvEbWMAGthy'
+}
+📦 Teller response data: [
+  {
+    last_four: '6796',
+    subtype: 'credit_card',
+    institution: { name: 'CapitalOne', id: 'capital_one' },
+    enrollment_id: 'enr_pg5se10t4b8e9h71da000',
+    currency: 'USD',
+    type: 'credit',
+    status: 'open',
+    name: 'Platinum Card',
+    links: {
+      balances: 'https://api.teller.io/accounts/acc_pg5se0tn4qg4ga7kks000/balances',
+      transactions: 'https://api.teller.io/accounts/acc_pg5se0tn4qg4ga7kks000/transactions',
+      details: 'https://api.teller.io/accounts/acc_pg5se0tn4qg4ga7kks000/details',
+      self: 'https://api.teller.io/accounts/acc_pg5se0tn4qg4ga7kks000'
+    },
+    id: 'acc_pg5se0tn4qg4ga7kks000'
+  },
+  {
+    last_four: '7001',
+    subtype: 'savings',
+    institution: { name: 'CapitalOne', id: 'capital_one' },
+    enrollment_id: 'enr_pg5se10t4b8e9h71da000',
+    currency: 'USD',
+    type: 'depository',
+    status: 'open',
+    name: 'Essential Savings',
+    links: {
+      balances: 'https://api.teller.io/accounts/acc_pg5se0tk4qg4ga7kks000/balances',
+      transactions: 'https://api.teller.io/accounts/acc_pg5se0tk4qg4ga7kks000/transactions',
+      details: 'https://api.teller.io/accounts/acc_pg5se0tk4qg4ga7kks000/details',
+      self: 'https://api.teller.io/accounts/acc_pg5se0tk4qg4ga7kks000'
+    },
+    id: 'acc_pg5se0tk4qg4ga7kks000'
+  }
+]
+📊 Found 2 accounts from Teller
+🔄 Starting account sync for user e10467dc-8a3a-4322-90ab-a2180732929b
+🏦 Fetching accounts from Teller API...
+🔑 Using Access Token starting with: 2151b071...
+🌐 Making request to: https://api.teller.io/accounts
+❌ Error fetching accounts from Teller: { error: { message: 'Authentication required', code: 'unauthorized' } }
+🔴 Axios Error Details: {
+  message: 'Request failed with status code 401',
+  url: '/accounts',
+  method: 'get',
+  status: 401,
+  statusText: 'Unauthorized',
+  data: {
+    error: { message: 'Authentication required', code: 'unauthorized' }
+  },
+  headers: Object [AxiosHeaders] {
+    'cache-control': 'max-age=0, private, must-revalidate',
+    connection: 'close',
+    'content-length': '69',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Thu, 17 Jul 2025 08:44:05 GMT',
+    server: 'Teller API',
+    vary: 'accept-encoding',
+    'x-request-id': 'GFL9bApV8WRALrAAInVR'
+  },
+  baseURL: 'https://api.teller.io',
+  timeout: 30000
+}
+❌ Error in syncAccountsForUser: Error: Authentication failed. The access token may be invalid or expired.
+    at /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:299:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async TellerService.deduplicateRequest (/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:115:22)
+    at async TellerService.syncAccountsForUser (/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:490:30)
+    at async connectAccount (/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/tellerController.js:96:33)
+🔴 CONNECT FAILURE: Error: Authentication failed. The access token may be invalid or expired.
+    at /Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:299:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async TellerService.deduplicateRequest (/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:115:22)
+    at async TellerService.syncAccountsForUser (/Users/suhaibaden/Documents/cofund_app/backend/src/services/tellerService.js:490:30)
+    at async connectAccount (/Users/suhaibaden/Documents/cofund_app/backend/src/controllers/tellerController.js:96:33)
+🧼 Cleaned up failed enrollment: enr_pg5se10t4b8e9h71da000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+🚀 Server running on port 3789
+[32m[nodemon] clean exit - waiting for changes before restart[39m

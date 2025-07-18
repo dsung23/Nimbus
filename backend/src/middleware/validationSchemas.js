@@ -9,7 +9,6 @@
 const Joi = require('joi');
 
 
-
 /**
  * Schema for profile updates
  * Validates optional profile fields
@@ -81,7 +80,6 @@ const changePasswordSchema = Joi.object({
 });
 
 
-
 /**
  * Schema for token refresh
  * Validates refresh token
@@ -122,30 +120,20 @@ const deleteAccountSchema = Joi.object({
  * Validates enrollment ID and access token
  */
 const tellerConnectSchema = Joi.object({
-  enrollment_id: Joi.string()
-    .min(1)
-    .required()
-    .messages({
-      'string.min': 'Enrollment ID cannot be empty',
-      'any.required': 'Enrollment ID is required'
-    }),
-  access_token: Joi.string()
-    .min(1)
-    .required()
-    .messages({
-      'string.min': 'Access token cannot be empty',
-      'any.required': 'Access token is required'
-    }),
-  institution_id: Joi.string()
-    .optional()
-    .messages({
-      'string.base': 'Institution ID must be a string'
-    }),
-  institution_name: Joi.string()
-    .optional()
-    .messages({
-      'string.base': 'Institution name must be a string'
-    })
+  enrollment: Joi.object({
+    accessToken: Joi.string().required(),
+    user: Joi.object({
+      id: Joi.string().required(),
+    }).required(),
+    enrollment: Joi.object({
+      id: Joi.string().required(),
+      institution: Joi.object({
+        name: Joi.string().required(),
+        id: Joi.string().optional(),
+      }).required(),
+    }).required(),
+    signatures: Joi.array().items(Joi.string()).required(),
+  }).required(),
 });
 
 /**
@@ -179,11 +167,155 @@ const syncAccountSchema = Joi.object({
   }).optional()
 });
 
+/**
+ * Schema for account creation/update (Updated to match ERD)
+ * Validates account fields based on ERD requirements
+ */
+const accountSchema = Joi.object({
+  name: Joi.string()
+    .min(1)
+    .max(100)
+    .required()
+    .messages({
+      'string.min': 'Account name cannot be empty',
+      'string.max': 'Account name must be 100 characters or less',
+      'any.required': 'Account name is required'
+    }),
+  type: Joi.string()
+    .valid('depository', 'credit', 'loan', 'investment', 'other')
+    .required()
+    .messages({
+      'any.only': 'Account type must be one of: depository, credit, loan, investment, other',
+      'any.required': 'Account type is required'
+    }),
+  institution: Joi.string()
+    .max(100)
+    .optional()
+    .messages({
+      'string.max': 'Institution name must be 100 characters or less'
+    }),
+  account_number: Joi.string()
+    .max(50)
+    .optional()
+    .messages({
+      'string.max': 'Account number must be 50 characters or less'
+    }),
+  routing_number: Joi.string()
+    .max(20)
+    .optional()
+    .messages({
+      'string.max': 'Routing number must be 20 characters or less'
+    }),
+  balance: Joi.number()
+    .precision(2)
+    .min(-999999999.99)
+    .max(999999999.99)
+    .optional()
+    .messages({
+      'number.base': 'Balance must be a number',
+      'number.min': 'Balance cannot be less than -999,999,999.99',
+      'number.max': 'Balance cannot be greater than 999,999,999.99'
+    }),
+  available_balance: Joi.number()
+    .precision(2)
+    .min(-999999999.99)
+    .max(999999999.99)
+    .optional()
+    .messages({
+      'number.base': 'Available balance must be a number',
+      'number.min': 'Available balance cannot be less than -999,999,999.99',
+      'number.max': 'Available balance cannot be greater than 999,999,999.99'
+    }),
+  currency: Joi.string()
+    .length(3)
+    .uppercase()
+    .default('USD')
+    .optional()
+    .messages({
+      'string.length': 'Currency must be exactly 3 characters',
+      'string.uppercase': 'Currency must be uppercase'
+    }),
+  is_active: Joi.boolean()
+    .default(true)
+    .optional()
+    .messages({
+      'boolean.base': 'is_active must be a boolean'
+    }),
+  is_primary: Joi.boolean()
+    .default(false)
+    .optional()
+    .messages({
+      'boolean.base': 'is_primary must be a boolean'
+    }),
+  notes: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Notes must be a string'
+    }),
+  color: Joi.string()
+    .pattern(/^#[0-9A-Fa-f]{6}$/)
+    .default('#3B82F6')
+    .optional()
+    .messages({
+      'string.pattern.base': 'Color must be a valid hex color (e.g., #3B82F6)'
+    }),
+  icon: Joi.string()
+    .max(50)
+    .optional()
+    .messages({
+      'string.max': 'Icon must be 50 characters or less'
+    })
+});
+
+/**
+ * Schema for account update operations
+ * Validates fields that can be updated by users
+ */
+const updateAccountSchema = Joi.object({
+  name: Joi.string()
+    .min(1)
+    .max(100)
+    .optional()
+    .messages({
+      'string.min': 'Account name cannot be empty',
+      'string.max': 'Account name must be 100 characters or less'
+    }),
+  is_active: Joi.boolean()
+    .optional()
+    .messages({
+      'boolean.base': 'is_active must be a boolean'
+    }),
+  is_primary: Joi.boolean()
+    .optional()
+    .messages({
+      'boolean.base': 'is_primary must be a boolean'
+    }),
+  notes: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Notes must be a string'
+    }),
+  color: Joi.string()
+    .pattern(/^#[0-9A-Fa-f]{6}$/)
+    .optional()
+    .messages({
+      'string.pattern.base': 'Color must be a valid hex color (e.g., #3B82F6)'
+    }),
+  icon: Joi.string()
+    .max(50)
+    .optional()
+    .messages({
+      'string.max': 'Icon must be 50 characters or less'
+    })
+});
+
 module.exports = {
   updateProfileSchema,
   changePasswordSchema,
   refreshTokenSchema,
   deleteAccountSchema,
   tellerConnectSchema,
-  syncAccountSchema
+  syncAccountSchema,
+  accountSchema,
+  updateAccountSchema
 }; 
