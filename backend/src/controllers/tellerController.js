@@ -225,15 +225,6 @@ class TellerController {
     return colorMap[accountType] || ['#667eea', '#764ba2']; // default to savings colors
   }
 
-  /**
-   * Helper function to generate account mask (last 4 digits)
-   */
-  generateAccountMask = (accountId) => {
-    // Use the last 4 characters of the account ID as a simple mask
-    // In a real implementation, you'd want to use the actual account number
-    return accountId.slice(-4);
-  }
-
   async getAccounts(req, res) {
     try {
       const userId = req.user.id;
@@ -268,7 +259,7 @@ class TellerController {
       // Transform accounts to include frontend-required fields
       const transformedAccounts = (accounts || []).map(account => ({
         ...account,
-        mask: this.generateAccountMask(account.account_number),
+        mask: account.account_number,
         gradientColors: this.getGradientColors(account.type)
       }));
 
