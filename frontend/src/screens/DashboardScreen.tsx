@@ -3,8 +3,11 @@ import {
   ScrollView,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
 import styled from 'styled-components/native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AccountCarousel } from '../components/AccountCarousel';
 import { Account, DashboardState } from '../types/account';
 import { Background } from '../components/Background';
@@ -77,7 +80,33 @@ const ErrorText = styled.Text`
   line-height: 24px;
 `;
 
+const TransactionsButton = styled(TouchableOpacity)`
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  align-items: center;
+`;
+
+const TransactionsButtonText = styled.Text`
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+`;
+
+type DashboardStackParamList = {
+  DashboardMain: undefined;
+  Transactions: undefined;
+};
+
+type DashboardScreenNavigationProp = NativeStackNavigationProp<
+  DashboardStackParamList,
+  'DashboardMain'
+>;
+
 export const DashboardScreen: React.FC = () => {
+  const navigation = useNavigation<DashboardScreenNavigationProp>();
   const [state, setState] = useState<DashboardState>({
     accounts: [],
     isLoading: true,
@@ -135,6 +164,10 @@ export const DashboardScreen: React.FC = () => {
     );
   }
 
+  const handleTransactionsPress = () => {
+    navigation.navigate('Transactions');
+  };
+
   return (
     <Background>
       <ScrollContainer showsVerticalScrollIndicator={false}>
@@ -145,6 +178,10 @@ export const DashboardScreen: React.FC = () => {
         <SectionTitle>Your Accounts</SectionTitle>
         
         <AccountCarousel accounts={state.accounts} />
+        
+        <TransactionsButton onPress={handleTransactionsPress}>
+          <TransactionsButtonText>View Recent Transactions →</TransactionsButtonText>
+        </TransactionsButton>
       </ScrollContainer>
     </Background>
   );

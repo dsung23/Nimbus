@@ -155,7 +155,7 @@ export const AccountCard: React.FC<AccountCardProps> = ({ account, animatedStyle
             <BalanceLabel>Balance</BalanceLabel>
             <BalanceAmount>{formatCurrency(account.balance)}</BalanceAmount>
           </BalanceContainer>
-          <LastFourDigits>•••• {account.mask}</LastFourDigits>
+          <LastFourDigits>{account.mask}</LastFourDigits>
         </CardFooter>
       </GradientBackground>
     </CardContainer>

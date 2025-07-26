@@ -2,18 +2,29 @@ import React from 'react';
 import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { ChatbotScreen } from './src/screens/ChatbotScreen';
+import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { GlassmorphicTabBar } from './src/components/GlassmorphicTabBar';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { User } from './src/types/user';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+// Stack navigator for Dashboard and its related screens
+const DashboardStack: React.FC = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="DashboardMain" component={DashboardScreen} />
+    <Stack.Screen name="Transactions" component={TransactionsScreen} />
+  </Stack.Navigator>
+);
 
 const AppTabs: React.FC = () => (
   <Tab.Navigator
@@ -22,7 +33,7 @@ const AppTabs: React.FC = () => (
       headerShown: false,
     }}
   >
-    <Tab.Screen name="Dashboard" component={DashboardScreen} />
+    <Tab.Screen name="Dashboard" component={DashboardStack} />
     <Tab.Screen name="Chatbot" component={ChatbotScreen} />
     <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>
