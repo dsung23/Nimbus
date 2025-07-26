@@ -10,6 +10,7 @@ import { DashboardScreen } from './src/screens/DashboardScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { ChatbotScreen } from './src/screens/ChatbotScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
+import { BudgetingScreen } from './src/screens/BudgetingScreen';
 import { GlassmorphicTabBar } from './src/components/GlassmorphicTabBar';
 import { AuthNavigator } from './src/navigation/AuthNavigator';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
@@ -34,6 +35,7 @@ const AppTabs: React.FC = () => (
     }}
   >
     <Tab.Screen name="Dashboard" component={DashboardStack} />
+    <Tab.Screen name="Budgeting" component={BudgetingScreen} />
     <Tab.Screen name="Chatbot" component={ChatbotScreen} />
     <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>
