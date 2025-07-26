@@ -246,6 +246,7 @@ class TellerController {
           type,
           institution,
           balance,
+          account_number,
           available_balance,
           currency,
           sync_status,
@@ -267,7 +268,7 @@ class TellerController {
       // Transform accounts to include frontend-required fields
       const transformedAccounts = (accounts || []).map(account => ({
         ...account,
-        mask: this.generateAccountMask(account.id),
+        mask: this.generateAccountMask(account.account_number),
         gradientColors: this.getGradientColors(account.type)
       }));
 
