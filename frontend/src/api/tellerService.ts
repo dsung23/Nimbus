@@ -9,6 +9,7 @@ import {
   TellerSuccessPayload,
   TellerNonceResponse,
 } from '../types/teller';
+import { TransactionResponse } from '../types/transaction';
 
 /**
  * Get authentication headers with access token
@@ -231,7 +232,7 @@ export const getTransactions = async (
     startDate?: string;
     endDate?: string;
   }
-): Promise<any> => {
+): Promise<TransactionResponse> => {
   try {
     const headers = await getAuthHeaders();
     
@@ -251,7 +252,7 @@ export const getTransactions = async (
       headers,
     });
     
-    return await handleApiResponse(response);
+    return await handleApiResponse<TransactionResponse>(response);
   } catch (error) {
     console.error(`Error fetching transactions for account ${accountId}:`, error);
     throw error;

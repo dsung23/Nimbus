@@ -77,4 +77,7 @@ export interface TellerSyncStatusResponse {
 export interface TellerNonceResponse {
   success: true;
   nonce: string;
-} 
+}
+
+// Re-export transaction types for convenience
+export type { Transaction, TransactionResponse } from './transaction'; 
