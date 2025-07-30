@@ -211,21 +211,24 @@ module.exports = {
       };
 
       try {
-        // Get active teller enrollments for this user
+        // Get active Teller enrollments
         const { data: enrollments, error: enrollmentError } = await supabaseAdmin
           .from('teller_enrollments')
-          .select('*')
+          .select('enrollment_id, access_token, institution_name')
           .eq('user_id', authData.user.id)
           .eq('status', 'active');
 
         if (!enrollmentError && enrollments && enrollments.length > 0) {
           tellerStatus.hasActiveEnrollments = true;
-          console.log(`🔄 Found ${enrollments.length} active teller enrollments for user ${authData.user.id}`);
+          
+          // Clear any cached data to ensure fresh balance data
+          tellerService.clearCacheForUser(authData.user.id);
+          
+          console.log(`🔄 Syncing data for ${enrollments.length} Teller enrollments`);
 
-          // Sync accounts and transactions for each active enrollment
           for (const enrollment of enrollments) {
             try {
-              // Sync accounts first
+              // Sync accounts first (this handles balance syncing as well)
               const accountSyncResult = await tellerService.syncAccountsForUser(
                 authData.user.id,
                 enrollment.access_token,
@@ -234,17 +237,17 @@ module.exports = {
 
               tellerStatus.syncedAccounts += accountSyncResult.created + accountSyncResult.updated;
 
-              // Get accounts for this enrollment to sync transactions and balances
+              // Get accounts for this enrollment to sync transactions only
               const { data: accounts } = await supabaseAdmin
                 .from('accounts')
                 .select('id, teller_account_id, name')
                 .eq('teller_enrollment_id', enrollment.enrollment_id);
 
               if (accounts && accounts.length > 0) {
-                // Sync transactions and balances for each account
+                // Sync transactions only (balances already synced above)
                 for (const account of accounts) {
                   try {
-                    // Sync transactions
+                    // Sync transactions only
                     const transactionSyncResult = await tellerService.syncTransactionsForAccount(
                       account.id,
                       enrollment.access_token,
@@ -252,34 +255,7 @@ module.exports = {
                     );
 
                     tellerStatus.syncedTransactions += transactionSyncResult.created + transactionSyncResult.updated;
-
-                    // Sync account balance
-                    try {
-                      const balanceData = await tellerService.getAccountBalance(
-                        enrollment.access_token,
-                        account.teller_account_id
-                      );
-
-                      // Update account balance in database
-                      await supabaseAdmin
-                        .from('accounts')
-                        .update({
-                          balance: balanceData.current_balance,
-                          available_balance: balanceData.available_balance,
-                          last_sync: new Date().toISOString(),
-                          updated_at: new Date().toISOString()
-                        })
-                        .eq('id', account.id);
-
-                      console.log(`💰 Updated balance for account ${account.name}: $${balanceData.current_balance}`);
-                    } catch (balanceError) {
-                      console.warn(`⚠️ Could not fetch balance for account ${account.name}:`, balanceError.message);
-                      tellerStatus.syncErrors.push({
-                        type: 'balance_sync',
-                        account_id: account.id,
-                        error: balanceError.message
-                      });
-                    }
+                    console.log(`💰 Account ${account.name}: ${transactionSyncResult.created} new transactions, ${transactionSyncResult.updated} updated`);
                   } catch (transactionError) {
                     console.error(`❌ Error syncing transactions for account ${account.id}:`, transactionError);
                     tellerStatus.syncErrors.push({
@@ -662,112 +638,83 @@ module.exports = {
         syncErrors: []
       };
 
-      // Get active teller enrollments for this user
-      const { data: enrollments, error: enrollmentError } = await supabaseAdmin
-        .from('teller_enrollments')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active');
+      try {
+        // Get active teller enrollments for this user
+        const { data: enrollments, error: enrollmentError } = await supabaseAdmin
+          .from('teller_enrollments')
+          .select('enrollment_id, access_token, institution_name')
+          .eq('user_id', userId)
+          .eq('status', 'active');
 
-      if (enrollmentError) {
-        console.error('Error fetching enrollments:', enrollmentError);
-        return res.status(400).json({
-          success: false,
-          message: 'Failed to fetch teller enrollments',
-          error: enrollmentError.message
-        });
-      }
+        if (!enrollmentError && enrollments && enrollments.length > 0) {
+          syncStatus.hasActiveEnrollments = true;
+          
+          // Clear any cached data to ensure fresh balance data
+          tellerService.clearCacheForUser(userId);
+          
+          console.log(`🔄 Manual sync requested for ${enrollments.length} Teller enrollments`);
 
-      if (!enrollments || enrollments.length === 0) {
-        return res.status(200).json({
-          success: true,
-          message: 'No active teller enrollments found',
-          sync: syncStatus
-        });
-      }
+          // Sync accounts and transactions for each active enrollment
+          for (const enrollment of enrollments) {
+            try {
+              // Sync accounts first (this handles balance syncing as well)
+              const accountSyncResult = await tellerService.syncAccountsForUser(
+                userId,
+                enrollment.access_token,
+                enrollment.enrollment_id
+              );
 
-      syncStatus.hasActiveEnrollments = true;
-      console.log(`🔄 Found ${enrollments.length} active teller enrollments`);
+              syncStatus.syncedAccounts += accountSyncResult.created + accountSyncResult.updated;
 
-      // Sync accounts and transactions for each active enrollment
-      for (const enrollment of enrollments) {
-        try {
-          // Sync accounts first
-          const accountSyncResult = await tellerService.syncAccountsForUser(
-            userId,
-            enrollment.access_token,
-            enrollment.enrollment_id
-          );
+              // Get accounts for this enrollment to sync transactions only
+              const { data: accounts } = await supabaseAdmin
+                .from('accounts')
+                .select('id, teller_account_id, name')
+                .eq('teller_enrollment_id', enrollment.enrollment_id);
 
-          syncStatus.syncedAccounts += accountSyncResult.created + accountSyncResult.updated;
+              if (accounts && accounts.length > 0) {
+                // Sync transactions only (balances already synced above)
+                for (const account of accounts) {
+                  try {
+                    // Sync transactions only
+                    const transactionSyncResult = await tellerService.syncTransactionsForAccount(
+                      account.id,
+                      enrollment.access_token,
+                      account.teller_account_id
+                    );
 
-          // Get accounts for this enrollment to sync transactions and balances
-          const { data: accounts } = await supabaseAdmin
-            .from('accounts')
-            .select('id, teller_account_id, name')
-            .eq('teller_enrollment_id', enrollment.enrollment_id);
-
-          if (accounts && accounts.length > 0) {
-            // Sync transactions and balances for each account
-            for (const account of accounts) {
-              try {
-                // Sync transactions
-                const transactionSyncResult = await tellerService.syncTransactionsForAccount(
-                  account.id,
-                  enrollment.access_token,
-                  account.teller_account_id
-                );
-
-                syncStatus.syncedTransactions += transactionSyncResult.created + transactionSyncResult.updated;
-
-                // Sync account balance
-                try {
-                  const balanceData = await tellerService.getAccountBalance(
-                    enrollment.access_token,
-                    account.teller_account_id
-                  );
-
-                  // Update account balance in database
-                  await supabaseAdmin
-                    .from('accounts')
-                    .update({
-                      balance: balanceData.current_balance,
-                      available_balance: balanceData.available_balance,
-                      last_sync: new Date().toISOString(),
-                      updated_at: new Date().toISOString()
-                    })
-                    .eq('id', account.id);
-
-                  console.log(`💰 Updated balance for account ${account.name}: $${balanceData.current_balance}`);
-                } catch (balanceError) {
-                  console.warn(`⚠️ Could not fetch balance for account ${account.name}:`, balanceError.message);
-                  syncStatus.syncErrors.push({
-                    type: 'balance_sync',
-                    account_id: account.id,
-                    error: balanceError.message
-                  });
+                    syncStatus.syncedTransactions += transactionSyncResult.created + transactionSyncResult.updated;
+                    console.log(`💰 Manual sync - Account ${account.name}: ${transactionSyncResult.created} new transactions, ${transactionSyncResult.updated} updated`);
+                  } catch (transactionError) {
+                    console.error(`❌ Error syncing transactions for account ${account.id}:`, transactionError);
+                    syncStatus.syncErrors.push({
+                      type: 'transaction_sync',
+                      account_id: account.id,
+                      error: transactionError.message
+                    });
+                  }
                 }
-              } catch (transactionError) {
-                console.error(`❌ Error syncing transactions for account ${account.id}:`, transactionError);
-                syncStatus.syncErrors.push({
-                  type: 'transaction_sync',
-                  account_id: account.id,
-                  error: transactionError.message
-                });
               }
+            } catch (enrollmentSyncError) {
+              console.error(`❌ Error syncing enrollment ${enrollment.enrollment_id}:`, enrollmentSyncError);
+              syncStatus.syncErrors.push({
+                type: 'enrollment_sync',
+                enrollment_id: enrollment.enrollment_id,
+                error: enrollmentSyncError.message
+              });
             }
           }
-        } catch (enrollmentSyncError) {
-          console.error(`❌ Error syncing enrollment ${enrollment.enrollment_id}:`, enrollmentSyncError);
-          syncStatus.syncErrors.push({
-            type: 'enrollment_sync',
-            enrollment_id: enrollment.enrollment_id,
-            error: enrollmentSyncError.message
-          });
-        }
-      }
 
-      console.log(`✅ Manual sync completed: ${syncStatus.syncedAccounts} accounts, ${syncStatus.syncedTransactions} transactions`);
+          console.log(`✅ Manual sync completed: ${syncStatus.syncedAccounts} accounts, ${syncStatus.syncedTransactions} transactions`);
+
+        }
+      } catch (tellerError) {
+        console.error('❌ Error checking/syncing teller enrollments:', tellerError);
+        syncStatus.syncErrors.push({
+          type: 'general',
+          error: tellerError.message
+        });
+      }
 
       res.status(200).json({
         success: true,

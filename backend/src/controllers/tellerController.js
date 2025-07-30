@@ -92,14 +92,17 @@ class TellerController {
         });
       }
 
-      // Step 3: Sync accounts first
+      // Step 3: Clear any cached balance data for this user to ensure fresh data
+      tellerService.clearCacheForUser(userId);
+      
+      // Step 4: Sync accounts first (this will handle balance syncing as well)
       const accountSyncResult = await tellerService.syncAccountsForUser(
         userId, 
         enrollment.accessToken,
         enrollmentId
       );
 
-      // Step 4: Sync transactions for all synced accounts
+      // Step 5: Sync transactions for all synced accounts
       let transactionSyncResults = {
         total_accounts: 0,
         total_transactions: 0,
@@ -115,11 +118,11 @@ class TellerController {
           .eq('teller_enrollment_id', enrollmentId);
 
         if (syncedAccounts && syncedAccounts.length > 0) {
-          console.log(`🔄 Starting transaction and balance sync for ${syncedAccounts.length} accounts`);
+          console.log(`🔄 Starting transaction sync for ${syncedAccounts.length} accounts (balances already synced)`);
           
           for (const account of syncedAccounts) {
             try {
-              // Sync transactions
+              // Sync transactions only (balance was already synced in Step 4)
               const transactionResult = await tellerService.syncTransactionsForAccount(
                 account.id,
                 enrollment.accessToken,
@@ -129,33 +132,7 @@ class TellerController {
               transactionSyncResults.total_accounts++;
               transactionSyncResults.total_transactions += transactionResult.created + transactionResult.updated;
 
-              // Sync account balance
-              try {
-                const balanceData = await tellerService.getAccountBalance(
-                  enrollment.accessToken,
-                  account.teller_account_id
-                );
-
-                // Update account balance in database
-                await getClient()
-                  .from('accounts')
-                  .update({
-                    balance: balanceData.current_balance,
-                    available_balance: balanceData.available_balance,
-                    last_sync: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', account.id);
-
-                console.log(`💰 Updated balance for account ${account.id}: $${balanceData.current_balance}`);
-              } catch (balanceError) {
-                console.warn(`⚠️ Could not fetch balance for account ${account.id}:`, balanceError.message);
-                transactionSyncResults.errors.push({
-                  account_id: account.id,
-                  type: 'balance_sync',
-                  error: balanceError.message
-                });
-              }
+              console.log(`💰 Account ${account.id} transaction sync completed: ${transactionResult.created} created, ${transactionResult.updated} updated`);
             } catch (transactionError) {
               console.error(`❌ Error syncing transactions for account ${account.id}:`, transactionError);
               transactionSyncResults.errors.push({
@@ -214,7 +191,7 @@ class TellerController {
   /**
    * Helper function to get gradient colors based on account type
    */
-  getGradientColors = (accountType) => {
+  getGradientColors(accountType) {
     const colorMap = {
       'checking': ['#f093fb', '#f5576c'],
       'savings': ['#667eea', '#764ba2'],

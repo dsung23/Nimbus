@@ -97,6 +97,24 @@ class TellerService {
         this.cache.delete(key);
       }
     }
+    console.log(`🗑️ Cleared all cached data for user ${userId}`);
+  }
+
+  clearBalanceCache(accessToken, accountId) {
+    // Clear specific balance cache entry
+    const cacheKey = this.getCacheKey('balances', accessToken, accountId);
+    this.cache.delete(cacheKey);
+    console.log(`🗑️ Cleared balance cache for account ${accountId}`);
+  }
+
+  clearAllBalanceCaches() {
+    // Clear all balance cache entries
+    for (const [key] of this.cache) {
+      if (key.startsWith('balances:')) {
+        this.cache.delete(key);
+      }
+    }
+    console.log(`🗑️ Cleared all balance caches`);
   }
 
   async deduplicateRequest(requestKey, apiCallFunction) {
@@ -329,84 +347,8 @@ class TellerService {
         
         console.log(`💰 Fetching transactions for account ${accountId} from Teller API...`);
         
-        // Handle sandbox mode with mock data if using test token
-        if (accessToken.startsWith('test_token_') || process.env.TELLER_ENVIRONMENT === 'sandbox') {
-          console.log('🧪 Using sandbox mode with mock transaction data');
-          const mockTransactions = [
-            {
-              details: {
-                processing_status: 'complete',
-                category: 'dining',
-                counterparty: {
-                  name: 'Starbucks Coffee',
-                  type: 'organization'
-                }
-              },
-              running_balance: null,
-              description: 'Coffee Shop Purchase',
-              id: 'txn_pf53ae2brofp6upddo001',
-              date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Yesterday
-              account_id: accountId,
-              links: {
-                account: `https://api.teller.io/accounts/${accountId}`,
-                self: `https://api.teller.io/accounts/${accountId}/transactions/txn_pf53ae2brofp6upddo001`
-              },
-              amount: '-23.45',
-              type: 'card_payment',
-              status: 'posted'
-            },
-            {
-              details: {
-                processing_status: 'complete',
-                category: 'utilities',
-                counterparty: {
-                  name: 'Property Management Co',
-                  type: 'organization'
-                }
-              },
-              running_balance: null,
-              description: 'Monthly Rent Payment',
-              id: 'txn_pf53ae2brofp6upddo002',
-              date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 days ago
-              account_id: accountId,
-              links: {
-                account: `https://api.teller.io/accounts/${accountId}`,
-                self: `https://api.teller.io/accounts/${accountId}/transactions/txn_pf53ae2brofp6upddo002`
-              },
-              amount: '-1250.00',
-              type: 'transfer',
-              status: 'posted'
-            },
-            {
-              details: {
-                processing_status: 'complete',
-                category: 'income',
-                counterparty: {
-                  name: 'ACME Corp',
-                  type: 'organization'
-                }
-              },
-              running_balance: null,
-              description: 'Salary Deposit',
-              id: 'txn_pf53ae2brofp6upddo003',
-              date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days ago
-              account_id: accountId,
-              links: {
-                account: `https://api.teller.io/accounts/${accountId}`,
-                self: `https://api.teller.io/accounts/${accountId}/transactions/txn_pf53ae2brofp6upddo003`
-              },
-              amount: '2500.00',
-              type: 'deposit',
-              status: 'posted'
-            }
-          ];
-          
-          // Cache the mock result
-          this.setCachedData(cacheKey, mockTransactions);
-          
-          console.log(`📊 Found ${mockTransactions.length} mock transactions for account ${accountId}`);
-          return mockTransactions;
-        }
+        // Remove mock data usage - always fetch from real Teller API
+        console.log(`💰 Making request to Teller API for real transaction data`);
         
         const params = new URLSearchParams();
         if (options.fromDate) params.append('from_date', options.fromDate);
@@ -592,18 +534,25 @@ class TellerService {
         institution: tellerAccount.institution?.name || enrollment.institution_name || 'Unknown Institution',
         account_number: tellerAccount.last_four ? `****${tellerAccount.last_four}` : null,
         routing_number: tellerAccount.routing_numbers?.[0] || null,
-        balance: 0, // Will be updated with balance API call below
-        available_balance: 0, // Will be updated with balance API call below
+        balance: 0, // Initialize to 0, will be updated with real balance API call
+        available_balance: 0, // Initialize to 0, will be updated with real balance API call
         currency: tellerAccount.currency || 'USD',
         teller_account_id: tellerAccount.id,
         teller_institution_id: tellerAccount.institution?.id || enrollment.institution_id || null,
         teller_enrollment_id: enrollment.enrollment_id, // Use the actual enrollment ID from the database
-        sync_status: 'success',
+        sync_status: 'pending_balance', // Will be updated after balance fetch
         is_active: tellerAccount.status === 'open' ? true : false, // Use actual status from Teller
         is_primary: await this.shouldSetAsPrimary(userId, tellerAccount.id), // Set first account as primary
         last_sync: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      console.log(`📋 Account data to be saved:`, {
+        ...accountData,
+        // Hide sensitive data in logs
+        account_number: accountData.account_number ? '[MASKED]' : null,
+        routing_number: accountData.routing_number ? '[MASKED]' : null
+      });
 
       let accountId;
       
@@ -634,23 +583,112 @@ class TellerService {
         accountId = newAccount.id;
       }
 
-      // Fetch and update balances if account has balance endpoint
-      if (tellerAccount.links?.balances) {
-        try {
-          const balanceData = await this.getAccountBalance(accessToken, tellerAccount.id);
+      // Fetch and update balances for all Teller accounts
+      // Debug: Log the account structure to understand what Teller is sending
+      console.log(`🔗 Account links structure for ${tellerAccount.id}:`, JSON.stringify(tellerAccount.links || {}, null, 2));
+      console.log(`📋 Full account object structure:`, JSON.stringify({
+        id: tellerAccount.id,
+        name: tellerAccount.name,
+        type: tellerAccount.type,
+        status: tellerAccount.status,
+        links: tellerAccount.links,
+        institution: tellerAccount.institution
+      }, null, 2));
+      
+      try {
+        console.log(`🔍 Attempting to fetch balance for account ${tellerAccount.id}`);
+        console.log(`🔑 Access token length: ${accessToken.length}, starts with: ${accessToken.substring(0, 8)}...`);
+        
+        // Clear any existing balance cache for this account to ensure fresh data
+        this.clearBalanceCache(accessToken, tellerAccount.id);
+        
+        const balanceData = await this.getAccountBalance(accessToken, tellerAccount.id);
+        
+        // CRITICAL DEBUG: Log the exact balance data received
+        console.log(`💰 Raw balance data received from Teller API:`, JSON.stringify(balanceData, null, 2));
+        
+        // Ensure we have valid balance data before updating
+        if (balanceData && (balanceData.current_balance !== undefined || balanceData.available_balance !== undefined)) {
+          // CRITICAL DEBUG: Log the exact values being set
+          console.log(`✅ Setting account balance: current=${balanceData.current_balance}, available=${balanceData.available_balance}`);
           
-          await this.supabase
+          // Update balance directly with real Teller data (matching fix-balances utility approach)
+          // This sets the balance from Teller API and prevents any database triggers from overriding it
+          const balanceUpdate = {
+            balance: balanceData.current_balance,
+            available_balance: balanceData.available_balance,
+            sync_status: 'success',
+            notes: 'Balance synced from Teller API',
+            last_sync: new Date().toISOString()
+          };
+          
+          console.log(`🔄 Updating account ${accountId} with balance data:`, JSON.stringify(balanceUpdate, null, 2));
+          
+          const { error: balanceError } = await this.supabase
             .from('accounts')
-            .update({
-              balance: balanceData.current_balance,
-              available_balance: balanceData.available_balance
-            })
+            .update(balanceUpdate)
             .eq('id', accountId);
+
+          if (balanceError) {
+            console.error(`❌ Failed to update balance for account ${tellerAccount.id}:`, balanceError);
+          } else {
+            console.log(`✅ Successfully updated balance for account ${tellerAccount.id}: $${balanceData.current_balance}`);
+          }
+        } else {
+          console.error(`❌ Invalid balance data received for account ${tellerAccount.id}:`, balanceData);
+          // CRITICAL: Don't leave account with 0 balance, try to get balance manually
+          console.log(`🔄 Attempting manual balance fetch for account ${tellerAccount.id}...`);
+          
+          try {
+            const response = await this.axiosInstance.get(`/accounts/${tellerAccount.id}/balances`, {
+              auth: {
+                username: accessToken,
+                password: ''
+              }
+            });
             
-          console.log(`💰 Updated balances for account: ${accountData.name}`);
-        } catch (balanceError) {
-          console.warn(`⚠️ Could not fetch balance for account ${tellerAccount.id}:`, balanceError.message);
+            console.log(`🔍 Manual balance fetch response:`, JSON.stringify(response.data, null, 2));
+            
+            if (response.data) {
+               const manualBalance = {
+                 balance: response.data.ledger || response.data.available || 0,
+                 available_balance: response.data.available || response.data.ledger || 0,
+                 sync_status: 'success',
+                 notes: 'Balance synced via manual fetch from Teller API',
+                 last_sync: new Date().toISOString()
+               };
+              
+              console.log(`🔄 Updating with manual balance data:`, JSON.stringify(manualBalance, null, 2));
+              
+              const { error: manualError } = await this.supabase
+                .from('accounts')
+                .update(manualBalance)
+                .eq('id', accountId);
+                
+              if (manualError) {
+                console.error(`❌ Manual balance update failed:`, manualError);
+              } else {
+                console.log(`✅ Manual balance update successful: $${manualBalance.balance}`);
+              }
+            }
+          } catch (manualError) {
+            console.error(`❌ Manual balance fetch failed:`, manualError.message);
+          }
         }
+      } catch (balanceError) {
+        console.error(`❌ Failed to fetch/update balance for account ${tellerAccount.id}:`, balanceError.message);
+        console.error(`❌ Balance error details:`, balanceError.response?.data || balanceError);
+        
+        // Set balances to 0 if API call fails to avoid showing stale/mock data
+        await this.supabase
+          .from('accounts')
+          .update({
+            balance: 0,
+            available_balance: 0,
+            sync_status: 'balance_failed',
+            notes: `Balance sync failed: ${balanceError.message}`
+          })
+          .eq('id', accountId);
       }
 
       return accountId;
@@ -757,11 +795,62 @@ class TellerService {
         .eq('teller_transaction_id', tellerTransaction.id)
         .single();
 
+      // Determine transaction type and ensure amount follows database constraint
+      const tellerAmount = parseFloat(tellerTransaction.amount);
+      
+      // Simplified transaction type determination based on amount sign from Teller
+      // Teller provides amounts where:
+      // - Negative amounts are expenses (money going out)
+      // - Positive amounts are income (money coming in)
+      let transactionType;
+      let correctedAmount;
+      
+      // Get category and description for logging
+      const category = tellerTransaction.details?.category?.toLowerCase() || '';
+      const description = tellerTransaction.description?.toLowerCase() || '';
+      
+      // Determine type based on Teller's amount sign (this is the standard)
+      if (tellerAmount < 0) {
+        // Negative amount from Teller = expense (money going out)
+        transactionType = 'expense';
+        correctedAmount = Math.abs(tellerAmount); // Store expenses as positive values
+      } else {
+        // Positive amount from Teller = income (money coming in)
+        transactionType = 'income';
+        correctedAmount = tellerAmount; // Keep positive for income
+      }
+      
+      // Handle edge case for zero amounts
+      if (tellerAmount === 0) {
+        transactionType = 'expense'; // Default zero amounts to expense
+        correctedAmount = 0;
+      }
+      
+      // Final validation: ensure amounts are positive for consistency
+      if (transactionType === 'expense') {
+        correctedAmount = Math.abs(correctedAmount); // Always store expenses as positive
+      } else if (transactionType === 'income' && correctedAmount < 0) {
+        console.log(`⚠️ Converting negative income amount to positive: ${correctedAmount} -> ${Math.abs(correctedAmount)}`);
+        correctedAmount = Math.abs(correctedAmount);
+      }
+      
+      // Debug logging for transaction type determination
+      console.log(`💳 Transaction: ${tellerTransaction.description}`);
+      console.log(`   Original amount: ${tellerAmount}`);
+      console.log(`   Category: ${category}`);
+      console.log(`   Determined type: ${transactionType}`);
+      console.log(`   Final amount: ${correctedAmount}`);
+      
+      // Ensure the amount is a valid number, not a string
+      if (isNaN(correctedAmount)) {
+        throw new Error(`Invalid amount value: ${tellerTransaction.amount}`);
+      }
+      
       const transactionData = {
         user_id: userId,
         account_id: accountId,
-        amount: Math.abs(parseFloat(tellerTransaction.amount)),
-        type: this.mapTellerTransactionType(tellerTransaction.type, tellerTransaction.amount),
+        amount: correctedAmount,
+        type: transactionType,
         description: tellerTransaction.description || 'Unknown Transaction',
         date: tellerTransaction.date,
         posted_date: tellerTransaction.date, // Teller doesn't separate posted_date, use same as date
@@ -823,14 +912,6 @@ class TellerService {
 
   // Remove this method since we now use Teller types directly
 
-  mapTellerTransactionType(tellerType, amount) {
-    // Teller uses positive/negative amounts to indicate credit/debit
-    if (parseFloat(amount) < 0) {
-      return 'expense';
-    } else {
-      return 'income';
-    }
-  }
 
   mapTellerTransactionStatus(tellerStatus) {
     const statusMap = {
@@ -1039,36 +1120,52 @@ class TellerService {
           return cachedBalance;
         }
         
-        console.log(`💰 Fetching balance for account ${accountId}`);
+        console.log(`💰 Fetching balance for account ${accountId} from Teller API`);
+        console.log(`🔑 Using access token: ${accessToken.substring(0, 8)}...`);
+        console.log(`🌐 Making request to: ${this.baseURL}/accounts/${accountId}/balances`);
         
-        // Handle sandbox mode with mock data if using test token
-        if (accessToken.startsWith('test_token_') || process.env.TELLER_ENVIRONMENT === 'sandbox') {
-          console.log('🧪 Using sandbox mode with mock balance data');
-          const mockBalance = {
-            account_id: accountId,
-            current_balance: accountId === 'acc_pf53ae2brofp6upddo001' ? 1234.56 : 5678.90,
-            available_balance: accountId === 'acc_pf53ae2brofp6upddo001' ? 1234.56 : 5678.90,
-            currency: 'USD',
-            last_updated: new Date().toISOString()
-          };
-          
-          // Cache the mock result
-          this.setCachedData(cacheKey, mockBalance);
-          
-          return mockBalance;
-        }
-        
-        const response = await this.axiosInstance.get(`/accounts/${accountId}`, {
+        const response = await this.axiosInstance.get(`/accounts/${accountId}/balances`, {
           auth: {
             username: accessToken,
             password: ''
           }
         });
 
+        console.log(`💰 Raw balance response from Teller for account ${accountId}:`, JSON.stringify(response.data, null, 2));
+
+        // Handle different possible response formats from Teller
+        let currentBalance = 0;
+        let availableBalance = 0;
+
+        if (response.data) {
+          // Try different property names that Teller might use
+          currentBalance = response.data.current || 
+                          response.data.current_balance || 
+                          response.data.balance || 
+                          response.data.ledger ||
+                          0;
+                          
+          availableBalance = response.data.available || 
+                            response.data.available_balance || 
+                            response.data.balance ||
+                            currentBalance ||
+                            0;
+
+          // Convert strings to numbers if needed
+          if (typeof currentBalance === 'string') {
+            currentBalance = parseFloat(currentBalance);
+          }
+          if (typeof availableBalance === 'string') {
+            availableBalance = parseFloat(availableBalance);
+          }
+
+          console.log(`💰 Parsed balances - Current: ${currentBalance}, Available: ${availableBalance}`);
+        }
+
         const balanceData = {
-          account_id: response.data.id,
-          current_balance: parseFloat(response.data.balance),
-          available_balance: parseFloat(response.data.available_balance || response.data.balance),
+          account_id: accountId,
+          current_balance: currentBalance,
+          available_balance: availableBalance,
           currency: response.data.currency || 'USD',
           last_updated: new Date().toISOString()
         };
