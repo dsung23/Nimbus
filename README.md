@@ -1,6 +1,4 @@
-# CoFund - Bare-Bone React Native + Express Setup
-
-A minimal, organized React Native frontend with Express backend setup.
+# Nimbus 
 
 ## Project Structure
 
