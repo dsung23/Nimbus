@@ -6,6 +6,8 @@
 
 Nimbus is a comprehensive personal finance management platform that combines intelligent AI-driven insights with secure bank account integration. The application helps users track spending, manage budgets, and receive personalized financial recommendations through an advanced chatbot interface.
 
+## Demo Link
+[Youtube Demo Link](https://youtube.com/shorts/pKXGi9nTFPA)
 
 ## Technology Stack
 
